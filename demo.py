@@ -252,7 +252,7 @@ class FastCIFAR10(torchvision.datasets.CIFAR10):
 
 # Main training loop CIFAR10
 if __name__ == "__main__":
-    device = torch.device('cuda:0')
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = DeepSoftHebb()
     model.to(device)
 
