@@ -275,22 +275,22 @@ if __name__ == "__main__":
     testloader = torch.utils.data.DataLoader(testset, batch_size=1000, shuffle=False)
 
     # Unsupervised training with SoftHebb
-    running_loss = 0.0
-    for epoch in range(3):
-        for i, data in enumerate(unsup_trainloader, 0):
-            inputs, _ = data
-            inputs = inputs.to(device)
+    # running_loss = 0.0
+    # for epoch in range(3):
+    #     for i, data in enumerate(unsup_trainloader, 0):
+    #         inputs, _ = data
+    #         inputs = inputs.to(device)
 
-            # zero the parameter gradients
-            unsup_optimizer.zero_grad()
+    #         # zero the parameter gradients
+    #         unsup_optimizer.zero_grad()
 
-            # forward + update computation
-            with torch.no_grad():
-                outputs = model(inputs)
+    #         # forward + update computation
+    #         with torch.no_grad():
+    #             outputs = model(inputs)
 
-            # optimize
-            unsup_optimizer.step()
-            unsup_lr_scheduler.step()
+    #         # optimize
+    #         unsup_optimizer.step()
+    #         unsup_lr_scheduler.step()
 
     # Supervised training of classifier
     # set requires grad false and eval mode for all modules but classifier
