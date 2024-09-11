@@ -2,7 +2,7 @@ name: hebbian
 channels:
   - pytorch
   - conda-forge
-  - defaults
+  - nodefaults
 dependencies:
   - pytorch=1.9.0
   - torchvision=0.8.2
