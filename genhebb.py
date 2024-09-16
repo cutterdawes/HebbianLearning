@@ -14,37 +14,18 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
 
 
-class SoftHebbConv2d(nn.Module):
+class SoftHebbLinear(nn.Module):
     def __init__(
             self,
             in_channels: int,
             out_channels: int,
-            kernel_size: int,
-            stride: int = 1,
-            padding: int = 0,
-            dilation: int = 1,
-            groups: int = 1,
-            t_invert: float = 12,
     ) -> None:
         """
-        Simplified implementation of Conv2d learnt with SoftHebb; an unsupervised, efficient and bio-plausible
-        learning algorithm.
-        This simplified implementation omits certain configurable aspects, like using a bias, groups>1, etc. which can
-        be found in the full implementation in hebbconv.py
+        ...
         """
-        super(SoftHebbConv2d, self).__init__()
-        assert groups == 1, "Simple implementation does not support groups > 1."
+        super(SoftHebbLinear, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.kernel_size = _pair(kernel_size)
-        self.stride = _pair(stride)
-        self.dilation = _pair(dilation)
-        self.groups = groups
-        self.padding_mode = 'reflect'
-        self.F_padding = (padding, padding, padding, padding)
-        weight_range = 25 / math.sqrt((in_channels / groups) * kernel_size * kernel_size)
-        self.weight = nn.Parameter(weight_range * torch.randn((out_channels, in_channels // groups, *self.kernel_size)))
-        self.t_invert = torch.tensor(t_invert)
 
     def forward(self, x):
         x = F.pad(x, self.F_padding, self.padding_mode)  # pad input
@@ -88,12 +69,16 @@ class SoftHebbConv2d(nn.Module):
         return weighted_input
 
 
+class SimpleSoftHebb(nn.Module):
+    def __init__(self):
+
+
 class DeepSoftHebb(nn.Module):
     def __init__(self):
         super(DeepSoftHebb, self).__init__()
         # block 1
-        self.bn1 = nn.BatchNorm2d(3, affine=False)
-        self.conv1 = SoftHebbConv2d(in_channels=3, out_channels=96, kernel_size=5, padding=2, t_invert=1,)
+        self.bn1 = nn.BatchNorm2d(1, affine=False)
+        self.conv1 = SoftHebbConv2d(in_channels=1, out_channels=96, kernel_size=5, padding=2, t_invert=1,)
         self.activ1 = Triangle(power=0.7)
         self.pool1 = nn.MaxPool2d(kernel_size=4, stride=2, padding=1)
         # block 2
@@ -114,6 +99,7 @@ class DeepSoftHebb(nn.Module):
 
     def forward(self, x):
         # block 1
+        # import pdb; pdb.set_trace()
         out = self.pool1(self.activ1(self.conv1(self.bn1(x))))
         # block 2
         out = self.pool2(self.activ2(self.conv2(self.bn2(out))))
@@ -244,9 +230,12 @@ class FastMNIST(MNIST):
                 self.len = self.data.shape[0]
 
         # Scale data to [0,1]
-        self.data = torch.tensor(self.data, dtype=torch.float, device=device).div_(255).unsqueeze(1)
+        self.data = self.data.unsqueeze(1).float().div(255)
+        self.data = self.data.to(device)
+        # self.data = torch.tensor(self.data, dtype=torch.float, device=device).div_(255).unsqueeze(1)
 
-        self.targets = torch.tensor(self.targets, device=device)
+        self.targets = self.targets.to(device)
+        # self.targets = torch.tensor(self.targets, device=device)
 
     def __getitem__(self, index):
         """
@@ -282,7 +271,7 @@ if __name__ == "__main__":
     unsup_trainloader = DataLoader(trainset, batch_size=10, shuffle=True, )
     sup_trainloader = DataLoader(trainset, batch_size=64, shuffle=True, )
 
-    testset = FastMNIST('./data', train=False)
+    testset = FastMNIST('./data', train=False, download=True)
     testloader = DataLoader(testset, batch_size=1000, shuffle=False)
 
     # Unsupervised training with SoftHebb

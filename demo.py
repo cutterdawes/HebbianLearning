@@ -291,47 +291,16 @@ if __name__ == "__main__":
         # optimize
         unsup_optimizer.step()
         unsup_lr_scheduler.step()
+
     unsup_optimizer.zero_grad()
     model.conv1.requires_grad = False
-    model.conv1.eval()
-    model.bn1.eval()
-    # 2nd unsupervised epoch
-    # for i, data in enumerate(unsup_trainloader, 0):
-    #     inputs, _ = data
-    #     inputs = inputs.to(device)
-
-    #     # zero the parameter gradients
-    #     unsup_optimizer.zero_grad()
-
-    #     # forward + update computation
-    #     with torch.no_grad():
-    #         outputs = model(inputs)
-
-    #     # optimize
-    #     unsup_optimizer.step()
-    #     unsup_lr_scheduler.step()
-    # unsup_optimizer.zero_grad()
     model.conv2.requires_grad = False
-    model.conv2.eval()
-    model.bn2.eval()
-    # 3rd unsupervised epoch
-    # for i, data in enumerate(unsup_trainloader, 0):
-    #     inputs, _ = data
-    #     inputs = inputs.to(device)
-
-    #     # zero the parameter gradients
-    #     unsup_optimizer.zero_grad()
-
-    #     # forward + update computation
-    #     with torch.no_grad():
-    #         outputs = model(inputs)
-
-    #     # optimize
-    #     unsup_optimizer.step()
-    #     unsup_lr_scheduler.step()
-    # unsup_optimizer.zero_grad()
     model.conv3.requires_grad = False
+    model.conv1.eval()
+    model.conv2.eval()
     model.conv3.eval()
+    model.bn1.eval()
+    model.bn2.eval()
     model.bn3.eval()
 
     # Supervised training of classifier
