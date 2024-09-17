@@ -1,0 +1,95 @@
+import torch
+from torch import nn, optim
+import torch.nn.functional as F
+from torch.nn.modules.utils import _pair
+from torch.optim.lr_scheduler import StepLR
+from torch.utils.data import DataLoader
+from torchvision.datasets import MNIST
+from genhebb import FastMNIST
+
+
+class Baseline(nn.Module):
+    """
+    Simple baseline MLP to be trained with BP end-to-end
+    """
+    def __init__(self):
+        super(Baseline, self).__init__()
+        self.input = nn.Linear(28 * 28, 2000)
+        self.hidden = nn.Linear(2000, 2000)
+        self.output = nn.Linear(2000, 10)
+    
+    def forward(self, x):
+        x = x.view(-1, 28 * 28)
+        x = F.relu(self.input(x))
+        x = F.relu(self.hidden(x))
+        x = self.output(x)
+        return x
+
+
+# Main training loop MNIST
+if __name__ == "__main__":
+
+    # specify device and model
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = Baseline()
+    model.to(device)
+
+    # training parameters
+    epochs = 50
+    learning_rate = 0.001
+    batch_size = 64
+
+    # load train and test data
+    trainset = FastMNIST('./data', train=True, download=True)
+    trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True)
+
+    testset = FastMNIST('./data', train=False, download=True)
+    testloader = DataLoader(testset, batch_size=batch_size, shuffle=False)
+
+    # define loss and optimizer
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+
+    # train baseline model (BP end-to-end)
+    print('Training...')
+    for epoch in range(epochs):
+        model.train()
+        running_loss = 0.0
+        for images, labels in trainloader:
+
+            # zero the parameter gradients
+            optimizer.zero_grad()
+
+            # forward + backward + optimize
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+
+            # update training statistics
+            running_loss += loss.item()
+        print(f'Epoch [{epoch+1}/{epochs}], Loss: {running_loss / len(trainloader):.3f}')
+
+    # test model
+    print('Testing...')
+    model.eval()
+    running_loss = 0.
+    correct = 0
+    total = 0
+    # since we're not training, we don't need to calculate the gradients for our outputs
+    with torch.no_grad():
+        for data in testloader:
+            images, labels = data
+            images = images.to(device)
+            labels = labels.to(device)
+            # calculate outputs by running images through the network
+            outputs = model(images)
+            # the class with the highest energy is what we choose as prediction
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+            loss = criterion(outputs, labels)
+            running_loss += loss.item()
+
+    print(f'Accuracy: {100 * correct / total} %')
+    print(f'Loss: {running_loss / total:.3f}')

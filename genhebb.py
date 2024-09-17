@@ -69,8 +69,8 @@ class SoftHebbLinear(nn.Module):
         return weighted_input
 
 
-class SimpleSoftHebb(nn.Module):
-    def __init__(self):
+# class SimpleSoftHebb(nn.Module):
+#     def __init__(self):
 
 
 class DeepSoftHebb(nn.Module):
