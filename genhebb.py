@@ -34,15 +34,6 @@ learning_rules = {
 }
 
 
-# class choose_learning_rule(argparse.Action):
-#     def __call__(self, parser, namespace, values, option_string=None):
-#         # check learning rule is among possible options
-#         if values not in learning_rules.keys():
-#             parser.error('learning rule must be one of: ' + ', '.join(learning_rules.keys()))
-#         # assign learning rule function to argument
-#         setattr(namespace, self.dest, learning)
-
-
 class HebbianLayer(nn.Module):
     def __init__(
             self,
