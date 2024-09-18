@@ -32,10 +32,10 @@ class Baseline(nn.Module):
 if __name__ == "__main__":
     # create and parse arguments
     parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian plasticity rule')
-    parser.add_argument('-e', '--epochs', type=int, default=50, help='Number of training epochs (default: 50)')
-    parser.add_argument('-l', '--learning_rate', type=float, default=0.001, help='Learning rate (default: 0.001)')
-    parser.add_argument('-b', '--batch_size', type=int, default=64, help='Batch size (default: 64)')
-    parser.add_argument('-s', '--save', action='store_true', help='Save the model')
+    parser.add_argument('--epochs', type=int, default=50, help='Number of training epochs (default: 50)')
+    parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate (default: 0.001)')
+    parser.add_argument('--batch_size', type=int, default=64, help='Batch size (default: 64)')
+    parser.add_argument('--save', action='store_true', help='Save the model')
     args = parser.parse_args()
 
     # specify device and model
@@ -110,4 +110,4 @@ if __name__ == "__main__":
     if args.save:
         path = f'saved_models/baseline-{args.epochs}epochs-lr{args.learning_rate}-batch{args.batch_size}.pt'
         torch.save(model.state_dict(), path)
-        print('Model saved to: path')
+        print(f'Model saved to: {path}')

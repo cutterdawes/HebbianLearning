@@ -130,10 +130,11 @@ class FastMNIST(MNIST):
 if __name__ == "__main__":
     # create and parse arguments
     parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian plasticity rule')
-    parser.add_argument('-e', '--epochs', type=int, default=50, help='Number of training epochs (default: 50)')
-    parser.add_argument('-l', '--learning_rate', type=float, default=0.001, help='Learning rate (default: 0.001)')
-    parser.add_argument('-b', '--batch_size', type=int, default=64, help='Batch size (default: 64)')
-    parser.add_argument('-s', '--save', action='store_true', help='Save the model')
+    parser.add_argument('--unsup_epochs', type=int, default=50, help='Number of unsupervised epochs (default: 1)')
+    parser.add_argument('--sup_epochs', type=int, default=50, help='Number of supervised epochs (default: 50)')
+    parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate (default: 0.001)')
+    parser.add_argument('--batch_size', type=int, default=64, help='Batch size (default: 64)')
+    parser.add_argument('--save', action='store_true', help='Save the model')
     args = parser.parse_args()
 
     # specify device, model, and learning rule
@@ -155,18 +156,22 @@ if __name__ == "__main__":
 
     # unsupervised training with Hebbian learning rule
     print('Training unsupervised layer...')
-    for inputs, _ in trainloader:
-        inputs = inputs.to(device)
+    for epoch in range(args.unsup_epochs):
+        for inputs, _ in trainloader:
+            inputs = inputs.to(device)
 
-        # zero the parameter gradients
-        unsup_optimizer.zero_grad()
+            # zero the parameter gradients
+            unsup_optimizer.zero_grad()
 
-        # forward + update computation
-        with torch.no_grad():
-            outputs = model(inputs)
+            # forward + update computation
+            with torch.no_grad():
+                outputs = model(inputs)
 
-        # optimize
-        unsup_optimizer.step()
+            # optimize
+            unsup_optimizer.step()
+        
+        # compute unsupervised layer statistics
+        print(f'Epoch [{epoch+1}/{args.unsup_epochs}] \t |W|_F: {int(torch.norm(model.unsup_layer.W))}')
 
     unsup_optimizer.zero_grad()
     model.unsup_layer.requires_grad = False
@@ -174,7 +179,7 @@ if __name__ == "__main__":
 
     # supervised training of classifier
     print('Training supervised classifier...')
-    for epoch in range(args.epochs):
+    for epoch in range(args.sup_epochs):
         model.classifier.train()
         running_loss = 0.0
         correct = 0
@@ -201,7 +206,7 @@ if __name__ == "__main__":
 
         # evaluation on test set
         if epoch % 10 == 0 or epoch == 49:
-            print(f'Epoch [{epoch+1}/{args.epochs}]')
+            print(f'Epoch [{epoch+1}/{args.sup_epochs}]')
             print(f'train loss: {running_loss / len(trainloader):.3f} \t train accuracy: {100 * correct / total:.1f} %')
 
             # on the test set
@@ -227,6 +232,6 @@ if __name__ == "__main__":
 
     # save model if specified
     if args.save:
-        path = f'saved_models/baseline-{args.epochs}epochs-lr{args.learning_rate}-batch{args.batch_size}.pt'
+        path = f'saved_models/genhebb-hebbs_rule-{args.unsup_epochs}unsup_epochs-{args.sup_epochs}sup_epochs-{args.learning_rate}lr-{args.batch_size}batch.pt'
         torch.save(model.state_dict(), path)
-        print('Model saved to: path')
+        print(f'Model saved to: {path}')
