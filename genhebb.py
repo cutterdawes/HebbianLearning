@@ -1,6 +1,7 @@
 """
 Script to train a perceptron on MNIST using various Hebbian plasticity rules
 """
+import argparse
 import torch
 from torch import nn, optim
 import torch.nn.functional as F
@@ -127,6 +128,11 @@ class FastMNIST(MNIST):
 
 # Main training loop MNIST
 if __name__ == "__main__":
+    # create and parse arguments
+    parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian plasticity rule')
+    parser.add_argument('-s', '--save', type=bool, required=False, help='save model')
+    args = parser.parse_args()
+
     # specify device, model, and learning rule
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = GenHebb(28*28, 2000, 10, hebbs_rule)
@@ -220,3 +226,7 @@ if __name__ == "__main__":
                     loss = criterion(outputs, labels)
                     running_loss += loss.item()
             print(f'test loss: {running_loss / len(trainloader):.3f} \t test accuracy: {100 * correct // total} % \n')
+
+    # save model if specified
+    if args.save:
+        torch.save(model.state_dict(), 'saved_models/genhebb-hebbs_rule.pt')
