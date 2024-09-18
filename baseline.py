@@ -73,9 +73,12 @@ if __name__ == "__main__":
             loss.backward()
             optimizer.step()
 
-            # update training statistics
+            # compute training statistics
             running_loss += loss.item()
-        print(f'Epoch [{epoch+1}/{epochs}], Loss: {running_loss / len(trainloader):.3f}')
+            if epoch % 10 == 0 or epoch == 49:
+                total += labels.size(0)
+                _, predicted = torch.max(outputs.data, 1)
+                correct += (predicted == labels).sum().item()
 
         # Evaluation on test set
         if epoch % 10 == 0 or epoch == 49:
