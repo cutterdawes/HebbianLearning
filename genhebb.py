@@ -20,6 +20,29 @@ def hebbs_rule(x, y, W):
     return dW
 
 
+def random_W(x, y, W):
+    """
+    return dW = 0 so that weights remain at random initialization
+    """
+    dW = torch.zeros_like(W)
+    return dW
+
+
+learning_rules = {
+    'hebbs_rule': hebbs_rule,
+    'random_W': random_W
+}
+
+
+# class choose_learning_rule(argparse.Action):
+#     def __call__(self, parser, namespace, values, option_string=None):
+#         # check learning rule is among possible options
+#         if values not in learning_rules.keys():
+#             parser.error('learning rule must be one of: ' + ', '.join(learning_rules.keys()))
+#         # assign learning rule function to argument
+#         setattr(namespace, self.dest, learning)
+
+
 class HebbianLayer(nn.Module):
     def __init__(
             self,
@@ -73,7 +96,7 @@ class GenHebb(nn.Module):
         self.classifier = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, x):
-        x = x.view(-1, 28*28)
+        x = x.view(-1, 28*28)  # specific to MNIST
         # unsupervised Hebbian layer
         x = F.relu(self.unsup_layer(x))
         # linear classifier
@@ -108,10 +131,8 @@ class FastMNIST(MNIST):
         # Scale data to [0,1]
         self.data = self.data.unsqueeze(1).float().div(255)
         self.data = self.data.to(device)
-        # self.data = torch.tensor(self.data, dtype=torch.float, device=device).div_(255).unsqueeze(1)
 
         self.targets = self.targets.to(device)
-        # self.targets = torch.tensor(self.targets, device=device)
 
     def __getitem__(self, index):
         """
@@ -130,16 +151,20 @@ class FastMNIST(MNIST):
 if __name__ == "__main__":
     # create and parse arguments
     parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian plasticity rule')
-    parser.add_argument('--unsup_epochs', type=int, default=50, help='Number of unsupervised epochs (default: 1)')
+    parser.add_argument('--learning_rule', type=str, default=hebbs_rule, choices=learning_rules.keys(),
+                        help='Choose learning rule from: ' + ', '.join(learning_rules.keys()))
+    parser.add_argument('--hidden_dim', type=int, default=2000, help='Number of neurons in hidden layer (default: 2000)')
+    parser.add_argument('--unsup_epochs', type=int, default=1, help='Number of unsupervised epochs (default: 1)')
     parser.add_argument('--sup_epochs', type=int, default=50, help='Number of supervised epochs (default: 50)')
     parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate (default: 0.001)')
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size (default: 64)')
     parser.add_argument('--save', action='store_true', help='Save the model')
     args = parser.parse_args()
 
-    # specify device, model, and learning rule
+    # specify device, learning rule, and model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = GenHebb(28*28, 2000, 10, hebbs_rule)
+    learning_rule = learning_rules[args.learning_rule]
+    model = GenHebb(28*28, args.hidden_dim, 10, learning_rule)
     model.to(device)
 
     # load train and test data
@@ -232,6 +257,6 @@ if __name__ == "__main__":
 
     # save model if specified
     if args.save:
-        path = f'saved_models/genhebb-hebbs_rule-{args.unsup_epochs}unsup_epochs-{args.sup_epochs}sup_epochs-{args.learning_rate}lr-{args.batch_size}batch.pt'
+        path = f'saved_models/genhebb-{args.learning_rule}-{args.unsup_epochs}unsup_epochs-{args.sup_epochs}sup_epochs-{args.learning_rate}lr-{args.batch_size}batch.pt'
         torch.save(model.state_dict(), path)
         print(f'Model saved to: {path}')

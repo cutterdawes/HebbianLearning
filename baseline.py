@@ -16,13 +16,20 @@ class Baseline(nn.Module):
     """
     Simple baseline MLP to be trained with BP end-to-end
     """
-    def __init__(self):
+    def __init__(self,
+                input_dim: int,
+                hidden_dim: int,
+                output_dim: int
+                ) -> None:
         super(Baseline, self).__init__()
-        self.input = nn.Linear(28*28, 2000)
-        self.output = nn.Linear(2000, 10)
+        self.input_dim = input_dim
+        self.hidden_dim = hidden_dim
+        self.output_dim = output_dim
+        self.input = nn.Linear(input_dim, hidden_dim)
+        self.output = nn.Linear(hidden_dim, output_dim)
     
     def forward(self, x):
-        x = x.view(-1, 28*28)
+        x = x.view(-1, 28*28)  # specific to MNIST
         x = F.relu(self.input(x))
         x = self.output(x)
         return x
@@ -31,7 +38,8 @@ class Baseline(nn.Module):
 # Main training loop MNIST
 if __name__ == "__main__":
     # create and parse arguments
-    parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian plasticity rule')
+    parser = argparse.ArgumentParser(description='Train a perceptron on MNIST with BP end-to-end')
+    parser.add_argument('--hidden_dim', type=int, default=2000, help='Number of neurons in hidden layer (default: 2000)')
     parser.add_argument('--epochs', type=int, default=50, help='Number of training epochs (default: 50)')
     parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate (default: 0.001)')
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size (default: 64)')
@@ -40,7 +48,7 @@ if __name__ == "__main__":
 
     # specify device and model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = Baseline()
+    model = Baseline(28*28, args.hidden_dim, 10)
     model.to(device)
 
     # load train and test data
