@@ -227,4 +227,4 @@ if __name__ == "__main__":
 
     # save model if specified
     if args.save:
-        torch.save(model.state_dict(), 'saved_models/genhebb-hebbs_rule.pt')
+        torch.save(model.state_dict(), f'saved_models/genhebb-hebbs_rule-{args.epochs}epochs-lr{args.learning_rate}-batch{args.batch_size}.pt')
