@@ -130,6 +130,9 @@ class FastMNIST(MNIST):
 if __name__ == "__main__":
     # create and parse arguments
     parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian plasticity rule')
+    parser.add_argument('-e', '--epochs', type=int, default=50, help='Number of training epochs (default: 50)')
+    parser.add_argument('-l', '--learning_rate', type=float, default=0.001, help='Learning rate (default: 0.001)')
+    parser.add_argument('-b', '--batch_size', type=int, default=64, help='Batch size (default: 64)')
     parser.add_argument('-s', '--save', action='store_true', help='Save the model')
     args = parser.parse_args()
 
@@ -138,22 +141,17 @@ if __name__ == "__main__":
     model = GenHebb(28*28, 2000, 10, hebbs_rule)
     model.to(device)
 
-    # training parameters
-    epochs = 50
-    learning_rate = 0.001
-    batch_size = 64
-
     # load train and test data
     trainset = FastMNIST('./data', train=True, download=True)
-    trainloader = DataLoader(trainset, batch_size=batch_size, shuffle=True)
+    trainloader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True)
 
     testset = FastMNIST('./data', train=False, download=True)
-    testloader = DataLoader(testset, batch_size=batch_size, shuffle=False)
+    testloader = DataLoader(testset, batch_size=args.batch_size, shuffle=False)
 
     # define loss and optimizers
     criterion = nn.CrossEntropyLoss()
-    unsup_optimizer = optim.Adam(model.unsup_layer.parameters(), lr=learning_rate)
-    sup_optimizer = optim.Adam(model.classifier.parameters(), lr=learning_rate)
+    unsup_optimizer = optim.Adam(model.unsup_layer.parameters(), lr=args.learning_rate)
+    sup_optimizer = optim.Adam(model.classifier.parameters(), lr=args.learning_rate)
 
     # unsupervised training with Hebbian learning rule
     print('Training unsupervised layer...')
@@ -176,7 +174,7 @@ if __name__ == "__main__":
 
     # supervised training of classifier
     print('Training supervised classifier...')
-    for epoch in range(epochs):
+    for epoch in range(args.epochs):
         model.classifier.train()
         running_loss = 0.0
         correct = 0
@@ -203,8 +201,8 @@ if __name__ == "__main__":
 
         # evaluation on test set
         if epoch % 10 == 0 or epoch == 49:
-            print(f'Epoch [{epoch+1}/{epochs}]')
-            print(f'train loss: {running_loss / len(trainloader):.3f} \t train accuracy: {100 * correct // total} %')
+            print(f'Epoch [{epoch+1}/{args.epochs}]')
+            print(f'train loss: {running_loss / len(trainloader):.3f} \t train accuracy: {100 * correct / total:.1f} %')
 
             # on the test set
             model.eval()
@@ -225,7 +223,7 @@ if __name__ == "__main__":
                     correct += (predicted == labels).sum().item()
                     loss = criterion(outputs, labels)
                     running_loss += loss.item()
-            print(f'test loss: {running_loss / len(trainloader):.3f} \t test accuracy: {100 * correct // total} % \n')
+            print(f'test loss: {running_loss / len(trainloader):.3f} \t test accuracy: {100 * correct / total:.1f} % \n')
 
     # save model if specified
     if args.save:
