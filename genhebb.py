@@ -1,5 +1,5 @@
 """
-Script to train a perceptron on MNIST using various Hebbian plasticity rules
+Script to train a perceptron on MNIST using various Hebbian learning rules
 """
 import argparse
 import torch
@@ -130,7 +130,7 @@ class FastMNIST(MNIST):
 if __name__ == "__main__":
     # create and parse arguments
     parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian plasticity rule')
-    parser.add_argument('-s', '--save', type=bool, required=False, help='save model')
+    parser.add_argument('-s', '--save', action='store_true', help='Save the model')
     args = parser.parse_args()
 
     # specify device, model, and learning rule

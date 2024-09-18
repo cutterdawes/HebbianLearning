@@ -1,3 +1,7 @@
+"""
+Script that provides a baseline trained with BP end-to-end to compare with various Hebbian learning rules
+"""
+import argparse
 import torch
 from torch import nn, optim
 import torch.nn.functional as F
@@ -28,7 +32,7 @@ class Baseline(nn.Module):
 if __name__ == "__main__":
     # create and parse arguments
     parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian plasticity rule')
-    parser.add_argument('-s', '--save', type=bool, required=False, help='save model')
+    parser.add_argument('-s', '--save', action='store_true', help='Save the model')
     args = parser.parse_args()
 
     # specify device and model
