@@ -150,19 +150,19 @@ if __name__ == "__main__":
     sup_optimizer = optim.Adam(model.classifier.parameters(), lr=learning_rate)
 
     # Unsupervised training with Hebbian learning rule
-    print('Training unsupervised layer...')
-    for inputs, _ in trainloader:
-        inputs = inputs.to(device)
+    # print('Training unsupervised layer...')
+    # for inputs, _ in trainloader:
+    #     inputs = inputs.to(device)
 
-        # zero the parameter gradients
-        unsup_optimizer.zero_grad()
+    #     # zero the parameter gradients
+    #     unsup_optimizer.zero_grad()
 
-        # forward + update computation
-        with torch.no_grad():
-            outputs = model(inputs)
+    #     # forward + update computation
+    #     with torch.no_grad():
+    #         outputs = model(inputs)
 
-        # optimize
-        unsup_optimizer.step()
+    #     # optimize
+    #     unsup_optimizer.step()
 
     unsup_optimizer.zero_grad()
     model.unsup_layer.requires_grad = False
@@ -198,7 +198,7 @@ if __name__ == "__main__":
         # Evaluation on test set
         if epoch % 10 == 0 or epoch == 49:
             print(f'Epoch [{epoch+1}/{epochs}]')
-            print(f'Train loss: {running_loss / len(trainloader):.3f}, \t train accuracy: {100 * correct // total} %')
+            print(f'train loss: {running_loss / len(trainloader):.3f} \t train accuracy: {100 * correct // total} %')
 
             # on the test set
             model.eval()
@@ -219,4 +219,4 @@ if __name__ == "__main__":
                     correct += (predicted == labels).sum().item()
                     loss = criterion(outputs, labels)
                     running_loss += loss.item()
-            print(f'Test loss: {running_loss / len(trainloader):.3f}, \t test accuracy: {100 * correct // total} % \n')
+            print(f'test loss: {running_loss / len(trainloader):.3f} \t test accuracy: {100 * correct // total} % \n')
