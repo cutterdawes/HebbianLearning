@@ -61,6 +61,8 @@ if __name__ == "__main__":
     for epoch in range(epochs):
         model.train()
         running_loss = 0.0
+        correct = 0
+        total = 0
         for inputs, labels in trainloader:
             inputs = inputs.to(device)
 
