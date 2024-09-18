@@ -150,19 +150,19 @@ if __name__ == "__main__":
     sup_optimizer = optim.Adam(model.classifier.parameters(), lr=learning_rate)
 
     # Unsupervised training with Hebbian learning rule
-    # print('Training unsupervised layer...')
-    # for inputs, _ in trainloader:
-    #     inputs = inputs.to(device)
+    print('Training unsupervised layer...')
+    for inputs, _ in trainloader:
+        inputs = inputs.to(device)
 
-    #     # zero the parameter gradients
-    #     unsup_optimizer.zero_grad()
+        # zero the parameter gradients
+        unsup_optimizer.zero_grad()
 
-    #     # forward + update computation
-    #     with torch.no_grad():
-    #         outputs = model(inputs)
+        # forward + update computation
+        with torch.no_grad():
+            outputs = model(inputs)
 
-    #     # optimize
-    #     unsup_optimizer.step()
+        # optimize
+        unsup_optimizer.step()
 
     unsup_optimizer.zero_grad()
     model.unsup_layer.requires_grad = False
