@@ -276,7 +276,6 @@ if __name__ == "__main__":
 
     # Unsupervised training with SoftHebb
     running_loss = 0.0
-    # 1st unsupervised epoch
     for i, data in enumerate(unsup_trainloader, 0):
         inputs, _ = data
         inputs = inputs.to(device)

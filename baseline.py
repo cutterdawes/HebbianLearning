@@ -28,7 +28,6 @@ class Baseline(nn.Module):
 
 # Main training loop MNIST
 if __name__ == "__main__":
-
     # specify device and model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = Baseline()
@@ -55,13 +54,14 @@ if __name__ == "__main__":
     for epoch in range(epochs):
         model.train()
         running_loss = 0.0
-        for images, labels in trainloader:
+        for inputs, labels in trainloader:
+            inputs = inputs.to(device)
 
             # zero the parameter gradients
             optimizer.zero_grad()
 
             # forward + backward + optimize
-            outputs = model(images)
+            outputs = model(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
@@ -79,11 +79,11 @@ if __name__ == "__main__":
     # since we're not training, we don't need to calculate the gradients for our outputs
     with torch.no_grad():
         for data in testloader:
-            images, labels = data
-            images = images.to(device)
+            inputs, labels = data
+            inputs = inputs.to(device)
             labels = labels.to(device)
-            # calculate outputs by running images through the network
-            outputs = model(images)
+            # calculate outputs by running inputs through the network
+            outputs = model(inputs)
             # the class with the highest energy is what we choose as prediction
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
