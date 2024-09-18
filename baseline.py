@@ -77,29 +77,31 @@ if __name__ == "__main__":
             running_loss += loss.item()
         print(f'Epoch [{epoch+1}/{epochs}], Loss: {running_loss / len(trainloader):.3f}')
 
-    # test model
-    print('Testing...')
-    model.eval()
-    running_loss = 0.
-    correct = 0
-    total = 0
-    # since we're not training, we don't need to calculate the gradients for our outputs
-    with torch.no_grad():
-        for data in testloader:
-            inputs, labels = data
-            inputs = inputs.to(device)
-            labels = labels.to(device)
-            # calculate outputs by running inputs through the network
-            outputs = model(inputs)
-            # the class with the highest energy is what we choose as prediction
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-            loss = criterion(outputs, labels)
-            running_loss += loss.item()
+        # Evaluation on test set
+        if epoch % 10 == 0 or epoch == 49:
+            print(f'Epoch [{epoch+1}/{epochs}]')
+            print(f'train loss: {running_loss / len(trainloader):.3f} \t train accuracy: {100 * correct // total} %')
 
-    print(f'Accuracy: {100 * correct / total} %')
-    print(f'Loss: {running_loss / total:.3f}')
+            # on the test set
+            model.eval()
+            running_loss = 0.
+            correct = 0
+            total = 0
+            # since we're not training, we don't need to calculate the gradients for our outputs
+            with torch.no_grad():
+                for data in testloader:
+                    inputs, labels = data
+                    inputs = inputs.to(device)
+                    labels = labels.to(device)
+                    # calculate outputs by running inputs through the network
+                    outputs = model(inputs)
+                    # the class with the highest energy is what we choose as prediction
+                    _, predicted = torch.max(outputs.data, 1)
+                    total += labels.size(0)
+                    correct += (predicted == labels).sum().item()
+                    loss = criterion(outputs, labels)
+                    running_loss += loss.item()
+            print(f'test loss: {running_loss / len(trainloader):.3f} \t test accuracy: {100 * correct // total} % \n')
 
     # save model if specified
     if args.save:

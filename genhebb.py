@@ -155,7 +155,7 @@ if __name__ == "__main__":
     unsup_optimizer = optim.Adam(model.unsup_layer.parameters(), lr=learning_rate)
     sup_optimizer = optim.Adam(model.classifier.parameters(), lr=learning_rate)
 
-    # Unsupervised training with Hebbian learning rule
+    # unsupervised training with Hebbian learning rule
     print('Training unsupervised layer...')
     for inputs, _ in trainloader:
         inputs = inputs.to(device)
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     model.unsup_layer.requires_grad = False
     model.unsup_layer.eval()
 
-    # Supervised training of classifier
+    # supervised training of classifier
     print('Training supervised classifier...')
     for epoch in range(epochs):
         model.classifier.train()
@@ -201,7 +201,7 @@ if __name__ == "__main__":
                 _, predicted = torch.max(outputs.data, 1)
                 correct += (predicted == labels).sum().item()
 
-        # Evaluation on test set
+        # evaluation on test set
         if epoch % 10 == 0 or epoch == 49:
             print(f'Epoch [{epoch+1}/{epochs}]')
             print(f'train loss: {running_loss / len(trainloader):.3f} \t train accuracy: {100 * correct // total} %')
