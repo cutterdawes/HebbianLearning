@@ -141,9 +141,9 @@ class FastMNIST(MNIST):
 # Main training loop MNIST
 if __name__ == "__main__":
     # create and parse arguments
-    parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian plasticity rule')
+    parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian learning rule')
     parser.add_argument('--learning_rule', type=str, default=hebbs_rule, choices=learning_rules.keys(),
-                        help='Choose learning rule from: ' + ', '.join(learning_rules.keys()))
+                        help='Choose Hebbian learning rule')
     parser.add_argument('--hidden_dim', type=int, default=2000, help='Number of neurons in hidden layer (default: 2000)')
     parser.add_argument('--unsup_epochs', type=int, default=1, help='Number of unsupervised epochs (default: 1)')
     parser.add_argument('--sup_epochs', type=int, default=50, help='Number of supervised epochs (default: 50)')
