@@ -142,14 +142,14 @@ class FastMNIST(MNIST):
 if __name__ == "__main__":
     # create and parse arguments
     parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian learning rule')
-    parser.add_argument('--learning_rule', type=str, default=hebbs_rule, choices=learning_rules.keys(),
+    parser.add_argument('--learning_rule', type=str, default='hebbs_rule', choices=learning_rules.keys(),
                         help='Choose Hebbian learning rule')
     parser.add_argument('--hidden_dim', type=int, default=2000, help='Number of neurons in hidden layer (default: 2000)')
     parser.add_argument('--unsup_epochs', type=int, default=1, help='Number of unsupervised epochs (default: 1)')
     parser.add_argument('--sup_epochs', type=int, default=50, help='Number of supervised epochs (default: 50)')
     parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate (default: 0.001)')
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size (default: 64)')
-    parser.add_argument('--save', action='store_true', help='Save the model')
+    parser.add_argument('--save', action='store_true', help='Save model')
     args = parser.parse_args()
 
     # specify device, learning rule, and model
