@@ -14,14 +14,12 @@ class Baseline(nn.Module):
     """
     def __init__(self):
         super(Baseline, self).__init__()
-        self.input = nn.Linear(28 * 28, 2000)
-        self.hidden = nn.Linear(2000, 2000)
+        self.input = nn.Linear(28*28, 2000)
         self.output = nn.Linear(2000, 10)
     
     def forward(self, x):
-        x = x.view(-1, 28 * 28)
+        x = x.view(-1, 28*28)
         x = F.relu(self.input(x))
-        x = F.relu(self.hidden(x))
         x = self.output(x)
         return x
 
