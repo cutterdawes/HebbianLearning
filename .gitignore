@@ -1,5 +1,6 @@
 data/
 saved_models/
+job_outputs/
 .DS_Store
 .ipynb_checkpoints/
 __pycache__/
