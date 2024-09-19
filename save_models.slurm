@@ -8,7 +8,7 @@
 #SBATCH --output=job_outputs/output_%j.log        # standard output and error log (%j is the job ID)
 
 # load modules and activate environment
-conda init
+source ~/.bashrc
 conda activate hebbian
 
 # train models
