@@ -5,9 +5,10 @@
 #SBATCH --gres=gpu:1                  # request 1 GPU
 #SBATCH --mem=16G                     # memory pool for all cores (16 GB)
 #SBATCH --time=01:00:00               # time limit (1 hour)
-#SBATCH --output=output_%j.log        # standard output and error log (%j is the job ID)
+#SBATCH --output=job_outputs/output_%j.log        # standard output and error log (%j is the job ID)
 
 # load modules and activate environment
+conda init
 conda activate hebbian
 
 # train models
