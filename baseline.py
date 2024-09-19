@@ -116,6 +116,6 @@ if __name__ == "__main__":
 
     # save model if specified
     if args.save:
-        path = f'saved_models/baseline-{args.epochs}epochs-lr{args.learning_rate}-batch{args.batch_size}.pt'
+        path = f'saved_models/baseline-{args.epochs}_epochs-{args.learning_rate}_lr-{args.batch_size}_batch.pt'
         torch.save(model.state_dict(), path)
         print(f'Model saved to: {path}')

@@ -14,7 +14,7 @@ def hebbs_rule(x, y, W):
     """
     return dW according to Hebb's rule (dW = x * y^T)
     """
-    dW = x.unsqueeze(-1) * y.unsqueeze(-2)
+    dW = x.unsqueeze(-2) * y.unsqueeze(-1)
     if dW.dim() > 2:
         dW = torch.sum(dW, 0)
     return dW
@@ -50,12 +50,12 @@ class HebbianLayer(nn.Module):
         super(HebbianLayer, self).__init__()
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.W = nn.Parameter(torch.randn(input_dim, output_dim))
+        self.W = nn.Parameter(torch.randn(output_dim, input_dim))
         self.learning_rule = learning_rule
 
     def forward(self, x):
         # standard forward pass
-        y = torch.matmul(x, self.W)
+        y = torch.matmul(x, self.W.T)
 
         # compute specified Hebbian learning rule, store in grad
         if self.training:
@@ -248,6 +248,6 @@ if __name__ == "__main__":
 
     # save model if specified
     if args.save:
-        path = f'saved_models/genhebb-{args.learning_rule}-{args.unsup_epochs}unsup_epochs-{args.sup_epochs}sup_epochs-{args.learning_rate}lr-{args.batch_size}batch.pt'
+        path = f'saved_models/genhebb-{args.learning_rule}-{args.unsup_epochs}_unsup_epochs-{args.sup_epochs}_sup_epochs-{args.learning_rate}_lr-{args.batch_size}_batch.pt'
         torch.save(model.state_dict(), path)
         print(f'Model saved to: {path}')
