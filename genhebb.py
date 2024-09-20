@@ -12,13 +12,21 @@ from typing import Callable
 
 def hebbs_rule(x, y, W):
     """
-    return dW according to Hebb's rule (dW = x * y^T)
+    return dW according to Hebb's rule: dW = y x^T
     """
-    dW = x.unsqueeze(-2) * y.unsqueeze(-1)
+    dW = y.unsqueeze(-1) * x.unsqueeze(-2)
     if dW.dim() > 2:
         dW = torch.sum(dW, 0)
     return dW
 
+def ojas_rule(x, y, W):
+    """
+    return dW according to Oja's rule: dW_ij = y_i (x_j - y_i W_ij)
+    """
+    dW = y.unsqueeze(-1) * x.unsqueeze(-2) + (y**2).unsqueeze(-1) * W.unsqueeze(0)
+    if dW.dim() > 2:
+        dW = torch.sum(dW, 0)
+    return 
 
 def random_W(x, y, W):
     """
@@ -30,6 +38,7 @@ def random_W(x, y, W):
 
 learning_rules = {
     'hebbs_rule': hebbs_rule,
+    'ojas_rule': ojas_rule,
     'random_W': random_W
 }
 
