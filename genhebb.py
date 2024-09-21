@@ -23,10 +23,10 @@ def ojas_rule(x, y, W):
     """
     return dW according to Oja's rule: dW_ij = y_i (x_j - y_i W_ij)
     """
-    dW = y.unsqueeze(-1) * x.unsqueeze(-2) + (y**2).unsqueeze(-1) * W.unsqueeze(0)
+    dW = y.unsqueeze(-1) * x.unsqueeze(-2) - (y**2).unsqueeze(-1) * W.unsqueeze(0)
     if dW.dim() > 2:
         dW = torch.sum(dW, 0)
-    return 
+    return dW
 
 def random_W(x, y, W):
     """
