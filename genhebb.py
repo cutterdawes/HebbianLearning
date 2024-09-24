@@ -29,9 +29,41 @@ def ojas_rule(x, y, W):
         dW = torch.mean(dW, 0)
     return dW
 
+def hard_WTA(learning_rule):
+    """
+    decorator to add hard WTA to specified learning rule (i.e., only change weights of "winning" neuron)
+    """
+    def WTA_learning_rule(x, y, W):
+
+        # find winning neuron and create indicator tensor
+        ind_win = torch.zeros_like(y)
+        winners = torch.argmax(y, -1)
+        ind_win = F.one_hot(winners, y.shape[-1]).float()
+
+        # modify dW to only change weights of winning neuron
+        dW = learning_rule(x, y, W)
+        dW = torch.matmul(ind_win, dW)
+        return dW
+    
+    return WTA_learning_rule
+
+@hard_WTA
+def hard_WTA_hebbs_rule(x, y, W):
+    """
+    hard WTA added to Hebb's rule
+    """
+    return hebbs_rule(x, y, W)
+
+@hard_WTA
+def hard_WTA_ojas_rule(x, y, W):
+    """
+    hard WTA added to Oja's rule
+    """
+    return ojas_rule(x, y, W)
+
 def random_W(x, y, W):
     """
-    return dW = 0 so that weights remain at random initialization
+    return dW = 0 so that weights remain at random initialization (alt. baseline test)
     """
     dW = torch.zeros_like(W)
     return dW
@@ -40,6 +72,8 @@ def random_W(x, y, W):
 learning_rules = {
     'hebbs_rule': hebbs_rule,
     'ojas_rule': ojas_rule,
+    'hard_WTA_hebbs_rule': hard_WTA_hebbs_rule,
+    'hard_WTA_ojas_rule': hard_WTA_ojas_rule,
     'random_W': random_W
 }
 
@@ -53,7 +87,7 @@ class HebbianLayer(nn.Module):
                 [torch.Tensor, torch.Tensor, nn.Parameter],
                 torch.Tensor
             ],
-            normalized: bool = False
+            normalized: bool = True
     ) -> None:
         """
         One fully-connected layer that updates via Hebb's rule
