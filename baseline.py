@@ -29,7 +29,7 @@ class Baseline(nn.Module):
         self.output = nn.Linear(hidden_dim, output_dim)
     
     def forward(self, x):
-        x = x.view(-1, 28*28)  # specific to MNIST
+        x = x.view(-1, 28*28)  #  NOTE: specific to MNIST
         x = F.relu(self.input(x))
         x = self.output(x)
         return x

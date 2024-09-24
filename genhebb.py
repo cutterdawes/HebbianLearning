@@ -87,10 +87,10 @@ class HebbianLayer(nn.Module):
                 [torch.Tensor, torch.Tensor, nn.Parameter],
                 torch.Tensor
             ],
-            normalized: bool = True
+            normalized: bool = True  # NOTE: add to script args?
     ) -> None:
         """
-        One fully-connected layer that updates via Hebb's rule
+        Fully-connected layer that updates via Hebb's rule
         """
         super(HebbianLayer, self).__init__()
         self.input_dim = input_dim
@@ -135,7 +135,7 @@ class GenHebb(nn.Module):
         self.classifier = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, x):
-        x = x.view(-1, 28*28)  # specific to MNIST
+        x = x.view(-1, 28*28)  # NOTE: specific to MNIST
         # unsupervised Hebbian layer
         x = F.relu(self.unsup_layer(x))
         # linear classifier
@@ -223,7 +223,7 @@ if __name__ == "__main__":
     # define loss and optimizers
     criterion = nn.CrossEntropyLoss()
     unsup_optimizer = optim.Adam(model.unsup_layer.parameters(), lr=args.learning_rate)
-    sup_optimizer = optim.Adam(model.classifier.parameters(), lr=args.learning_rate)
+    sup_optimizer = optim.Adam(model.classifier.parameters(), lr=0.001)  # NOTE: generally should be args.learning_rate
 
     # unsupervised training with Hebbian learning rule
     print('\n\nTraining unsupervised layer...\n')
