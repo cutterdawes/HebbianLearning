@@ -7,6 +7,7 @@ from torch import nn, optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
+import numpy as np
 from typing import Callable
 
 
@@ -16,7 +17,7 @@ def hebbs_rule(x, y, W):
     """
     dW = y.unsqueeze(-1) * x.unsqueeze(-2)
     if dW.dim() > 2:
-        dW = torch.sum(dW, 0)
+        dW = torch.mean(dW, 0)
     return dW
 
 def ojas_rule(x, y, W):
@@ -25,7 +26,7 @@ def ojas_rule(x, y, W):
     """
     dW = y.unsqueeze(-1) * x.unsqueeze(-2) - (y**2).unsqueeze(-1) * W.unsqueeze(0)
     if dW.dim() > 2:
-        dW = torch.sum(dW, 0)
+        dW = torch.mean(dW, 0)
     return dW
 
 def random_W(x, y, W):
@@ -52,7 +53,7 @@ class HebbianLayer(nn.Module):
                 [torch.Tensor, torch.Tensor, nn.Parameter],
                 torch.Tensor
             ],
-            normalized: bool = True
+            normalized: bool = False
     ) -> None:
         """
         One fully-connected layer that updates via Hebb's rule
@@ -116,7 +117,7 @@ class FastMNIST(MNIST):
     """
 
     def __init__(self, *args, **kwargs):
-        device = kwargs.pop('device', "cpu")
+        device = kwargs.pop('device', 'cpu')
         train_class = kwargs.pop('train_class', 'all')
         split = kwargs.pop('split', 'train')
         super().__init__(*args, **kwargs)
@@ -173,7 +174,7 @@ if __name__ == "__main__":
     )
 
     # specify device, learning rule, and model
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     learning_rule = learning_rules[args.learning_rule]
     model = GenHebb(28*28, args.hidden_dim, 10, learning_rule)
     model.to(device)
