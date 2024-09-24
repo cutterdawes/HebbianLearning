@@ -51,7 +51,8 @@ class HebbianLayer(nn.Module):
             learning_rule: Callable[
                 [torch.Tensor, torch.Tensor, nn.Parameter],
                 torch.Tensor
-            ]
+            ],
+            normalized: bool = True
     ) -> None:
         """
         One fully-connected layer that updates via Hebb's rule
@@ -61,6 +62,9 @@ class HebbianLayer(nn.Module):
         self.output_dim = output_dim
         self.W = nn.Parameter(torch.randn(output_dim, input_dim))
         self.learning_rule = learning_rule
+        self.normalized = normalized
+        if self.normalized:
+            self.W.data = F.normalize(self.W.data)
 
     def forward(self, x):
         # standard forward pass
@@ -161,6 +165,13 @@ if __name__ == "__main__":
     parser.add_argument('--save', action='store_true', help='Save model')
     args = parser.parse_args()
 
+    print(
+        f'\nParameters:\n' + 
+        f'\nlearning_rule={args.learning_rule}\thidden_dim={args.hidden_dim}' +
+        f'\nunsup_epochs={args.unsup_epochs}\t\tsup_epochs={args.sup_epochs}' +
+        f'\nlearning_rate={args.learning_rate}\tbatch_size={args.batch_size}'
+    )
+
     # specify device, learning rule, and model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     learning_rule = learning_rules[args.learning_rule]
@@ -180,7 +191,7 @@ if __name__ == "__main__":
     sup_optimizer = optim.Adam(model.classifier.parameters(), lr=args.learning_rate)
 
     # unsupervised training with Hebbian learning rule
-    print('Training unsupervised layer...')
+    print('\n\nTraining unsupervised layer...\n')
     for epoch in range(args.unsup_epochs):
         for inputs, _ in trainloader:
             inputs = inputs.to(device)
@@ -203,7 +214,7 @@ if __name__ == "__main__":
     model.unsup_layer.eval()
 
     # supervised training of classifier
-    print('Training supervised classifier...')
+    print('\n\nTraining supervised classifier...\n')
     for epoch in range(args.sup_epochs):
         model.classifier.train()
         running_loss = 0.0
