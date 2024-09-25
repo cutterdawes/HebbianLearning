@@ -2,9 +2,9 @@
 #SBATCH --job-name=save_models              # job name
 #SBATCH --ntasks=1                          # run a single task
 #SBATCH --cpus-per-task=4                   # number of CPU cores per task
-#SBATCH --gres=gpu:1                        # request 1 GPU
-#SBATCH --mem=16G                           # memory pool for all cores (16 GB)
-#SBATCH --time=06:00:00                     # time limit (6 hours)
+#SBATCH --gres=gpu:1                        # request GPU
+#SBATCH --mem=16G                           # memory pool for all cores
+#SBATCH --time=12:00:00                     # time limit
 #SBATCH --output=job_outputs/output_%j.log  # standard output and error log (%j is the job ID)
 
 # load modules and activate environment
@@ -12,13 +12,19 @@ source ~/.bashrc
 conda activate hebbian
 
 # train models
-# srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 1 --sup_epochs 50 --save
-# srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 5 --sup_epochs 50 --save
-# srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 10 --sup_epochs 50 --save
-srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 100 --sup_epochs 100 --save
-# srun python genhebb.py --learning_rule hebbs_rule --unsup_epochs 1 --sup_epochs 50 --save
-# srun python genhebb.py --learning_rule hebbs_rule --unsup_epochs 5 --sup_epochs 50 --save
-# srun python genhebb.py --learning_rule hebbs_rule --unsup_epochs 10 --sup_epochs 50 --save
-# srun python genhebb.py --learning_rule hebbs_rule --unsup_epochs 50 --sup_epochs 50 --save
-# srun python genhebb.py --learning_rule random_W --unsup_epochs 1 --sup_epochs 50 --save
-# srun python baseline.py --save
+srun python genhebb.py --learning_rule hard_WTA_ojas_rule --unsup_epochs 1 --sup_epochs 50 --save
+srun python genhebb.py --learning_rule hard_WTA_ojas_rule --unsup_epochs 5 --sup_epochs 50 --save
+srun python genhebb.py --learning_rule hard_WTA_ojas_rule --unsup_epochs 10 --sup_epochs 50 --save
+srun python genhebb.py --learning_rule hard_WTA_ojas_rule --unsup_epochs 50 --sup_epochs 50 --save
+
+srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 1 --sup_epochs 50 --save
+srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 5 --sup_epochs 50 --save
+srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 10 --sup_epochs 50 --save
+srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 50 --sup_epochs 50 --save
+
+srun python genhebb.py --learning_rule hebbs_rule --unsup_epochs 1 --sup_epochs 50 --save
+srun python genhebb.py --learning_rule hebbs_rule --unsup_epochs 5 --sup_epochs 50 --save
+srun python genhebb.py --learning_rule hebbs_rule --unsup_epochs 10 --sup_epochs 50 --save
+
+srun python genhebb.py --learning_rule random_W --unsup_epochs 1 --sup_epochs 50 --save
+srun python baseline.py --save
