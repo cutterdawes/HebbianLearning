@@ -112,7 +112,7 @@ class HebbianLayer(nn.Module):
         # compute specified Hebbian learning rule, store in grad
         if self.training:
             dW = self.learning_rule(x, y, self.W)
-            self.W.grad = dW
+            self.W.grad = -dW
 
         return y
     
@@ -232,11 +232,10 @@ if __name__ == "__main__":
     unsup_optimizer = optim.Adam(model.unsup_layer.parameters(), lr=args.unsup_lr)
     sup_optimizer = optim.Adam(model.classifier.parameters(), lr=args.sup_lr)
 
-    unsup_scheduler = ExponentialLR(unsup_optimizer, gamma=0.8)
+    # unsup_scheduler = ExponentialLR(unsup_optimizer, gamma=0.8)  # NOTE: schedule is turned off
 
     # unsupervised training with Hebbian learning rule
     print('\n\nTraining unsupervised layer...\n')
-    init_dW = model.unsup_layer.W
     for epoch in range(args.unsup_epochs):
         for inputs, _ in trainloader:
             inputs = inputs.to(device)
@@ -250,10 +249,13 @@ if __name__ == "__main__":
 
             # optimize
             unsup_optimizer.step()
-        unsup_scheduler.step()
+        # unsup_scheduler.step()  # NOTE: schedule is turned off
 
         # compute unsupervised layer statistics
-        print(f'Epoch [{epoch+1}/{args.unsup_epochs}] \t |W|_F: {int(torch.norm(model.unsup_layer.W))}')
+        print(f'Epoch [{epoch+1}/{args.unsup_epochs}]\t|W|_F: {int(torch.norm(model.unsup_layer.W))}')
+        if args.save:
+            path = f'saved_models/epoch_checkpoints/{args.learning_rule}_{epoch+1}.pt'
+            torch.save(model.state_dict(), path)
 
     unsup_optimizer.zero_grad()
     model.unsup_layer.requires_grad = False
