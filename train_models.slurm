@@ -12,10 +12,10 @@ source ~/.bashrc
 conda activate hebbian
 
 # train models
-srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 1 --sup_epochs 50 --save
-srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 5 --sup_epochs 50 --save
-srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 10 --sup_epochs 50 --save
-srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 50 --sup_epochs 50 --save
+# srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 1 --sup_epochs 50 --save
+# srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 5 --sup_epochs 50 --save
+# srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 10 --sup_epochs 50 --save
+srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 100 --sup_epochs 100 --save
 # srun python genhebb.py --learning_rule hebbs_rule --unsup_epochs 1 --sup_epochs 50 --save
 # srun python genhebb.py --learning_rule hebbs_rule --unsup_epochs 5 --sup_epochs 50 --save
 # srun python genhebb.py --learning_rule hebbs_rule --unsup_epochs 10 --sup_epochs 50 --save
