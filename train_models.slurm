@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=4                   # number of CPU cores per task
 #SBATCH --gres=gpu:1                        # request 1 GPU
 #SBATCH --mem=16G                           # memory pool for all cores (16 GB)
-#SBATCH --time=03:00:00                     # time limit (3 hours)
+#SBATCH --time=06:00:00                     # time limit (6 hours)
 #SBATCH --output=job_outputs/output_%j.log  # standard output and error log (%j is the job ID)
 
 # load modules and activate environment
