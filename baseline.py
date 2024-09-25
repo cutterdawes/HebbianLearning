@@ -56,6 +56,7 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = Baseline(28*28, args.hidden_dim, 10)
     model.to(device)
+    model_name = f'baseline-{args.epochs}_epochs-{args.learning_rate}_lr-{args.batch_size}_batch'
 
     # load train and test data
     trainset = FastMNIST('./data', train=True, download=True)
@@ -122,6 +123,6 @@ if __name__ == "__main__":
 
     # save model if specified
     if args.save:
-        path = f'saved_models/baseline-{args.epochs}_epochs-{args.learning_rate}_lr-{args.batch_size}_batch.pt'
+        path = f'saved_models/done-training/{model_name}.pt'
         torch.save(model.state_dict(), path)
         print(f'Model saved to: {path}')

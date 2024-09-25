@@ -34,7 +34,7 @@ def hard_WTA(learning_rule):
     """
     decorator to add hard WTA to specified learning rule (i.e., only change weights of "winning" neuron)
     """
-    def WTA_learning_rule(x, y, W):
+    def hard_WTA_learning_rule(x, y, W):
 
         # find winning neuron and create indicator tensor
         ind_win = torch.zeros_like(y)
@@ -49,7 +49,7 @@ def hard_WTA(learning_rule):
 
         return dW
     
-    return WTA_learning_rule
+    return hard_WTA_learning_rule
 
 @hard_WTA
 def hard_WTA_hebbs_rule(x, y, W):
@@ -218,6 +218,11 @@ if __name__ == "__main__":
     learning_rule = learning_rules[args.learning_rule]
     model = GenHebb(28*28, args.hidden_dim, 10, learning_rule)
     model.to(device)
+    model_name = f'''
+        genhebb-{args.learning_rule}
+        -{args.unsup_epochs}_unsup_epochs-{args.sup_epochs}_sup_epochs
+        -{args.unsup_lr}_unsup_lr-{args.sup_lr}_sup_lr-{args.batch_size}_batch
+    '''
 
     # load train and test data
     trainset = FastMNIST('./data', train=True, download=True)
@@ -232,7 +237,7 @@ if __name__ == "__main__":
     unsup_optimizer = optim.Adam(model.unsup_layer.parameters(), lr=args.unsup_lr)
     sup_optimizer = optim.Adam(model.classifier.parameters(), lr=args.sup_lr)
 
-    # unsup_scheduler = ExponentialLR(unsup_optimizer, gamma=0.8)  # NOTE: schedule is turned off
+    # unsup_scheduler = ExponentialLR(unsup_optimizer, gamma=0.8)  # NOTE: scheduler is turned off
 
     # unsupervised training with Hebbian learning rule
     print('\n\nTraining unsupervised layer...\n')
@@ -249,12 +254,12 @@ if __name__ == "__main__":
 
             # optimize
             unsup_optimizer.step()
-        # unsup_scheduler.step()  # NOTE: schedule is turned off
+        # unsup_scheduler.step()  # NOTE: scheduler is turned off
 
         # compute unsupervised layer statistics
         print(f'Epoch [{epoch+1}/{args.unsup_epochs}]\t|W|_F: {int(torch.norm(model.unsup_layer.W))}')
         if args.save:
-            path = f'saved_models/epoch_checkpoints/{args.learning_rule}_{epoch+1}.pt'
+            path = f'saved_models/mid-training/{model_name}-epoch_{epoch+1}.pt'
             torch.save(model.state_dict(), path)
 
     unsup_optimizer.zero_grad()
@@ -316,6 +321,6 @@ if __name__ == "__main__":
 
     # save model if specified
     if args.save:
-        path = f'saved_models/genhebb-{args.learning_rule}-{args.unsup_epochs}_unsup_epochs-{args.sup_epochs}_sup_epochs-{args.unsup_lr}_unsup_lr-{args.sup_lr}_sup_lr-{args.batch_size}_batch.pt'
+        path = f'saved_models/done-training/{model_name}.pt'
         torch.save(model.state_dict(), path)
         print(f'Model saved to: {path}')
