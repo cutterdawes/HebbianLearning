@@ -7,6 +7,7 @@ from torch import nn, optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
+from torch.optim.lr_scheduler import ExponentialLR
 import numpy as np
 from typing import Callable
 
@@ -198,16 +199,18 @@ if __name__ == "__main__":
     parser.add_argument('--hidden_dim', type=int, default=2000, help='Number of neurons in hidden layer (default: 2000)')
     parser.add_argument('--unsup_epochs', type=int, default=1, help='Number of unsupervised epochs (default: 1)')
     parser.add_argument('--sup_epochs', type=int, default=50, help='Number of supervised epochs (default: 50)')
-    parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate (default: 0.001)')
+    parser.add_argument('--unsup_lr', type=float, default=0.001, help='Unsupervised learning rate (default: 0.001)')
+    parser.add_argument('--sup_lr', type=float, default=0.001, help='Supervised learning rate (default: 0.001)')
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size (default: 64)')
     parser.add_argument('--save', action='store_true', help='Save model')
     args = parser.parse_args()
 
     print(
         f'\nParameters:\n' + 
-        f'\nlearning_rule={args.learning_rule}\thidden_dim={args.hidden_dim}' +
-        f'\nunsup_epochs={args.unsup_epochs}\t\tsup_epochs={args.sup_epochs}' +
-        f'\nlearning_rate={args.learning_rate}\tbatch_size={args.batch_size}'
+        f'\nlearning_rule={args.learning_rule}' +
+        f'\nhidden_dim={args.hidden_dim}\tbatch_size={args.batch_size}' +
+        f'\nunsup_epochs={args.unsup_epochs}\tsup_epochs={args.sup_epochs}' +
+        f'\nunsup_lr={args.unsup_lr}\tsup_lr={args.sup_lr}'
     )
 
     # specify device, learning rule, and model
@@ -223,10 +226,11 @@ if __name__ == "__main__":
     testset = FastMNIST('./data', train=False, download=True)
     testloader = DataLoader(testset, batch_size=args.batch_size, shuffle=False)
 
-    # define loss and optimizers
+    # define loss, optimizers, and LR schedulers
     criterion = nn.CrossEntropyLoss()
-    unsup_optimizer = optim.Adam(model.unsup_layer.parameters(), lr=args.learning_rate)
-    sup_optimizer = optim.Adam(model.classifier.parameters(), lr=0.001)  # NOTE: generally should be args.learning_rate
+    unsup_optimizer = optim.Adam(model.unsup_layer.parameters(), lr=args.unsup_lr)
+    sup_optimizer = optim.Adam(model.classifier.parameters(), lr=args.sup_lr)
+    unsup_scheduler = ExponentialLR(unsup_optimizer, gamma=0.8)
 
     # unsupervised training with Hebbian learning rule
     print('\n\nTraining unsupervised layer...\n')
@@ -243,6 +247,7 @@ if __name__ == "__main__":
 
             # optimize
             unsup_optimizer.step()
+            unsup_scheduler.step()
         
         # compute unsupervised layer statistics
         print(f'Epoch [{epoch+1}/{args.unsup_epochs}] \t |W|_F: {int(torch.norm(model.unsup_layer.W))}')
@@ -306,6 +311,6 @@ if __name__ == "__main__":
 
     # save model if specified
     if args.save:
-        path = f'saved_models/genhebb-{args.learning_rule}-{args.unsup_epochs}_unsup_epochs-{args.sup_epochs}_sup_epochs-{args.learning_rate}_lr-{args.batch_size}_batch.pt'
+        path = f'saved_models/genhebb-{args.learning_rule}-{args.unsup_epochs}_unsup_epochs-{args.sup_epochs}_sup_epochs-{args.unsup_lr}_unsup_lr-{args.sup_lr}_sup_lr-{args.batch_size}_batch.pt'
         torch.save(model.state_dict(), path)
         print(f'Model saved to: {path}')
