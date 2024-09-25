@@ -46,6 +46,12 @@ if __name__ == "__main__":
     parser.add_argument('--save', action='store_true', help='Save the model')
     args = parser.parse_args()
 
+    print(
+        f'\nParameters:\n' + 
+        f'\nhidden_dim={args.hidden_dim}\tepochs={args.epochs}' +
+        f'\nlearning_rate={args.learning_rate}\tbatch_size={args.batch_size}'
+    )
+
     # specify device and model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = Baseline(28*28, args.hidden_dim, 10)
@@ -63,7 +69,7 @@ if __name__ == "__main__":
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
 
     # train baseline model (BP end-to-end)
-    print('Training...')
+    print('\n\nTraining...\n')
     for epoch in range(args.epochs):
         model.train()
         running_loss = 0.0

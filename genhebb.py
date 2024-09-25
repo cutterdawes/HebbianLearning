@@ -42,7 +42,10 @@ def hard_WTA(learning_rule):
 
         # modify dW to only change weights of winning neuron
         dW = learning_rule(x, y, W)
-        dW = torch.matmul(ind_win, dW)
+        dW = ind_win.unsqueeze(-1) * dW.unsqueeze(0)
+        if dW.dim() > 2:
+            dW = torch.mean(dW, 0)
+
         return dW
     
     return WTA_learning_rule
