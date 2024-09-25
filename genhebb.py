@@ -218,11 +218,11 @@ if __name__ == "__main__":
     learning_rule = learning_rules[args.learning_rule]
     model = GenHebb(28*28, args.hidden_dim, 10, learning_rule)
     model.to(device)
-    model_name = f'''
-        genhebb-{args.learning_rule}
-        -{args.unsup_epochs}_unsup_epochs-{args.sup_epochs}_sup_epochs
-        -{args.unsup_lr}_unsup_lr-{args.sup_lr}_sup_lr-{args.batch_size}_batch
-    '''
+    model_name = (
+        f'genhebb-{args.learning_rule}'
+        f'-{args.unsup_epochs}_unsup_epochs-{args.sup_epochs}_sup_epochs'
+        f'-{args.unsup_lr}_unsup_lr-{args.sup_lr}_sup_lr-{args.batch_size}_batch'
+    )
 
     # load train and test data
     trainset = FastMNIST('./data', train=True, download=True)
@@ -320,6 +320,7 @@ if __name__ == "__main__":
             print(f'test loss: {running_loss / len(trainloader):.3f} \t test accuracy: {100 * correct / total:.1f} % \n')
 
     # save model if specified
+    import pdb; pdb.set_trace()
     if args.save:
         path = f'saved_models/done-training/{model_name}.pt'
         torch.save(model.state_dict(), path)
