@@ -228,12 +228,15 @@ if __name__ == "__main__":
 
     # define loss, optimizers, and LR schedulers
     criterion = nn.CrossEntropyLoss()
+
     unsup_optimizer = optim.Adam(model.unsup_layer.parameters(), lr=args.unsup_lr)
     sup_optimizer = optim.Adam(model.classifier.parameters(), lr=args.sup_lr)
+
     unsup_scheduler = ExponentialLR(unsup_optimizer, gamma=0.8)
 
     # unsupervised training with Hebbian learning rule
     print('\n\nTraining unsupervised layer...\n')
+    init_dW = model.unsup_layer.W
     for epoch in range(args.unsup_epochs):
         for inputs, _ in trainloader:
             inputs = inputs.to(device)
@@ -247,8 +250,8 @@ if __name__ == "__main__":
 
             # optimize
             unsup_optimizer.step()
-            unsup_scheduler.step()
-        
+        unsup_scheduler.step()
+
         # compute unsupervised layer statistics
         print(f'Epoch [{epoch+1}/{args.unsup_epochs}] \t |W|_F: {int(torch.norm(model.unsup_layer.W))}')
 
