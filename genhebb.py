@@ -320,7 +320,6 @@ if __name__ == "__main__":
             print(f'test loss: {running_loss / len(trainloader):.3f} \t test accuracy: {100 * correct / total:.1f} % \n')
 
     # save model if specified
-    import pdb; pdb.set_trace()
     if args.save:
         path = f'saved_models/done-training/{model_name}.pt'
         torch.save(model.state_dict(), path)
