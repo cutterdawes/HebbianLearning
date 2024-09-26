@@ -9,77 +9,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
 from torch.optim.lr_scheduler import ExponentialLR
 import numpy as np
-from typing import Callable
-
-
-def hebbs_rule(x, y, W):
-    """
-    return dW according to Hebb's rule: dW = y x^T
-    """
-    dW = y.unsqueeze(-1) * x.unsqueeze(-2)
-    if dW.dim() > 2:
-        dW = torch.mean(dW, 0)
-    return dW
-
-def ojas_rule(x, y, W):
-    """
-    return dW according to Oja's rule: dW_ij = y_i (x_j - y_i W_ij)
-    """
-    dW = y.unsqueeze(-1) * x.unsqueeze(-2) - (y**2).unsqueeze(-1) * W.unsqueeze(0)
-    if dW.dim() > 2:
-        dW = torch.mean(dW, 0)
-    return dW
-
-def hard_WTA(learning_rule):
-    """
-    decorator to add hard WTA to specified learning rule (i.e., only change weights of "winning" neuron)
-    """
-    def hard_WTA_learning_rule(x, y, W):
-
-        # find winning neuron and create indicator tensor
-        ind_win = torch.zeros_like(y)
-        winners = torch.argmax(y, -1)
-        ind_win = F.one_hot(winners, y.shape[-1]).float()
-
-        # modify dW to only change weights of winning neuron
-        dW = learning_rule(x, y, W)
-        dW = ind_win.unsqueeze(-1) * dW.unsqueeze(0)
-        if dW.dim() > 2:
-            dW = torch.mean(dW, 0)
-
-        return dW
-    
-    return hard_WTA_learning_rule
-
-@hard_WTA
-def hard_WTA_hebbs_rule(x, y, W):
-    """
-    hard WTA added to Hebb's rule
-    """
-    return hebbs_rule(x, y, W)
-
-@hard_WTA
-def hard_WTA_ojas_rule(x, y, W):
-    """
-    hard WTA added to Oja's rule
-    """
-    return ojas_rule(x, y, W)
-
-def random_W(x, y, W):
-    """
-    return dW = 0 so that weights remain at random initialization (alt. baseline test)
-    """
-    dW = torch.zeros_like(W)
-    return dW
-
-
-learning_rules = {
-    'hebbs_rule': hebbs_rule,
-    'ojas_rule': ojas_rule,
-    'hard_WTA_hebbs_rule': hard_WTA_hebbs_rule,
-    'hard_WTA_ojas_rule': hard_WTA_ojas_rule,
-    'random_W': random_W
-}
+from learning_rules import learning_rules
 
 
 class HebbianLayer(nn.Module):
@@ -87,20 +17,25 @@ class HebbianLayer(nn.Module):
             self,
             input_dim: int,
             output_dim: int,
-            learning_rule: Callable[
-                [torch.Tensor, torch.Tensor, nn.Parameter],
-                torch.Tensor
-            ],
+            learning_rule: str,
             normalized: bool = True  # NOTE: add to script args?
     ) -> None:
         """
         Fully-connected layer that updates via Hebb's rule
         """
         super(HebbianLayer, self).__init__()
+
+        # set model parameters
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.W = nn.Parameter(torch.randn(output_dim, input_dim))
-        self.learning_rule = learning_rule
+
+        # set learning rule
+        if learning_rule not in learning_rules.keys():
+            raise ValueError(f'Invalid learning rule: {learning_rule}. Must be one of {list(learning_rules.keys())}')
+        self.learning_rule = learning_rules[learning_rule]
+        
+        # optionally normalize W
         self.normalized = normalized
         if self.normalized:
             self.W.data = F.normalize(self.W.data)
@@ -123,10 +58,7 @@ class GenHebb(nn.Module):
             input_dim: int,
             hidden_dim: int,
             output_dim: int,
-            learning_rule: Callable[
-                [torch.Tensor, torch.Tensor, nn.Parameter],
-                torch.Tensor
-            ]
+            learning_rule: str
     ) -> None:
         """
         One-layer fully-connected model with a very simple Hebbian learning rule
@@ -213,10 +145,9 @@ if __name__ == "__main__":
         f'\nunsup_lr={args.unsup_lr}\tsup_lr={args.sup_lr}'
     )
 
-    # specify device, learning rule, and model
+    # specify device and model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    learning_rule = learning_rules[args.learning_rule]
-    model = GenHebb(28*28, args.hidden_dim, 10, learning_rule)
+    model = GenHebb(28*28, args.hidden_dim, 10, args.learning_rule)
     model.to(device)
     model_name = (
         f'genhebb-{args.learning_rule}'

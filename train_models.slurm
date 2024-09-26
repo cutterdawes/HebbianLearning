@@ -12,19 +12,24 @@ source ~/.bashrc
 conda activate hebbian
 
 # train models
-srun python genhebb.py --learning_rule hard_WTA_ojas_rule --unsup_epochs 1 --sup_epochs 50 --save
-srun python genhebb.py --learning_rule hard_WTA_ojas_rule --unsup_epochs 5 --sup_epochs 50 --save
-srun python genhebb.py --learning_rule hard_WTA_ojas_rule --unsup_epochs 10 --sup_epochs 50 --save
-srun python genhebb.py --learning_rule hard_WTA_ojas_rule --unsup_epochs 50 --sup_epochs 50 --save
+# srun python genhebb.py --learning_rule hard_WTA_ojas_rule --unsup_epochs 1 --sup_epochs 50 --save
+# srun python genhebb.py --learning_rule hard_WTA_ojas_rule --unsup_epochs 5 --sup_epochs 50 --save
+# srun python genhebb.py --learning_rule hard_WTA_ojas_rule --unsup_epochs 10 --sup_epochs 50 --save
+# srun python genhebb.py --learning_rule hard_WTA_ojas_rule --unsup_epochs 50 --sup_epochs 50 --save
 
-srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 1 --sup_epochs 50 --save
-srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 5 --sup_epochs 50 --save
-srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 10 --sup_epochs 50 --save
-srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 50 --sup_epochs 50 --save
+srun python genhebb.py --learning_rule hard_WTA_hebbs_rule --unsup_epochs 1 --sup_epochs 50 --save
+srun python genhebb.py --learning_rule hard_WTA_hebbs_rule --unsup_epochs 5 --sup_epochs 50 --save
+srun python genhebb.py --learning_rule hard_WTA_hebbs_rule --unsup_epochs 10 --sup_epochs 50 --save
+srun python genhebb.py --learning_rule hard_WTA_hebbs_rule --unsup_epochs 50 --sup_epochs 50 --save
 
-srun python genhebb.py --learning_rule hebbs_rule --unsup_epochs 1 --sup_epochs 50 --save
-srun python genhebb.py --learning_rule hebbs_rule --unsup_epochs 5 --sup_epochs 50 --save
-srun python genhebb.py --learning_rule hebbs_rule --unsup_epochs 10 --sup_epochs 50 --save
+# srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 1 --sup_epochs 50 --save
+# srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 5 --sup_epochs 50 --save
+# srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 10 --sup_epochs 50 --save
+# srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 50 --sup_epochs 50 --save
 
-srun python genhebb.py --learning_rule random_W --unsup_epochs 1 --sup_epochs 50 --save
-srun python baseline.py --save
+# srun python genhebb.py --learning_rule hebbs_rule --unsup_epochs 1 --sup_epochs 50 --save
+# srun python genhebb.py --learning_rule hebbs_rule --unsup_epochs 5 --sup_epochs 50 --save
+# srun python genhebb.py --learning_rule hebbs_rule --unsup_epochs 10 --sup_epochs 50 --save
+
+# srun python genhebb.py --learning_rule random_W --unsup_epochs 1 --sup_epochs 50 --save
+# srun python baseline.py --save

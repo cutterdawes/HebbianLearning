@@ -25,7 +25,7 @@ class Baseline(nn.Module):
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.output_dim = output_dim
-        self.input = nn.Linear(input_dim, hidden_dim)
+        self.input = nn.Linear(input_dim, hidden_dim, bias=False)
         self.output = nn.Linear(hidden_dim, output_dim)
     
     def forward(self, x):
