@@ -139,17 +139,7 @@ if __name__ == "__main__":
     parser.add_argument('--save', action='store_true', help='Save model')
     args = parser.parse_args()
 
-    print(
-        f'\nParameters:\n' + 
-        f'\nplasticity_rule={args.plasticity_rule}' +
-        f'\nwta_rule={args.wta_rule}' +
-        f'\nkwargs={args.kwargs}' +
-        f'\nhidden_dim={args.hidden_dim}\tbatch_size={args.batch_size}' +
-        f'\nunsup_epochs={args.unsup_epochs}\tsup_epochs={args.sup_epochs}' +
-        f'\nunsup_lr={args.unsup_lr}\tsup_lr={args.sup_lr}'
-    )
-
-    # unpack kwargs
+    # unpack and print args
     if args.kwargs != 'none':
         kwargs = {
             k: float(val) if '.' in val else int(val)
@@ -160,13 +150,22 @@ if __name__ == "__main__":
             ]}
     else:
         kwargs = {}
+    learning_rule = args.plasticity_rule if args.wta_rule == 'none' else f'{args.wta_rule}_{args.plasticity_rule}'
+    print(
+        f'\nParameters:\n' + 
+        f'\nlearning_rule={learning_rule}' +
+        f'\nkwargs={args.kwargs}' +
+        f'\nhidden_dim={args.hidden_dim}\tbatch_size={args.batch_size}' +
+        f'\nunsup_epochs={args.unsup_epochs}\tsup_epochs={args.sup_epochs}' +
+        f'\nunsup_lr={args.unsup_lr}\tsup_lr={args.sup_lr}'
+    )
 
     # specify device and model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = GenHebb(28*28, args.hidden_dim, 10, args.plasticity_rule, args.wta_rule, **kwargs)
     model.to(device)
     model_name = (
-        f'genhebb-{args.wta_rule}_{args.plasticity_rule}_{args.kwargs}'
+        f'genhebb-{learning_rule}'
         f'-{args.unsup_epochs}_unsup_epochs-{args.sup_epochs}_sup_epochs'
         f'-{args.unsup_lr}_unsup_lr-{args.sup_lr}_sup_lr-{args.batch_size}_batch'
     )
@@ -205,9 +204,9 @@ if __name__ == "__main__":
 
         # compute unsupervised layer statistics
         print(f'Epoch [{epoch+1}/{args.unsup_epochs}]\t|W|_F: {int(torch.norm(model.unsup_layer.W))}')
-        if args.save:
-            path = f'saved_models/mid-training/{model_name}-epoch_{epoch+1}.pt'
-            torch.save(model.state_dict(), path)
+        # if args.save:
+        #     path = f'saved_models/mid-training/{model_name}-epoch_{epoch+1}.pt'
+        #     torch.save(model.state_dict(), path)  # NOTE: not saving mid-training
 
     unsup_optimizer.zero_grad()
     model.unsup_layer.requires_grad = False

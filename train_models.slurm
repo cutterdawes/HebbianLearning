@@ -12,15 +12,10 @@ source ~/.bashrc
 conda activate hebbian
 
 # train models
-# srun python genhebb.py --learning_rule hard_WTA_ojas_rule --unsup_epochs 1 --sup_epochs 50 --save
-# srun python genhebb.py --learning_rule hard_WTA_ojas_rule --unsup_epochs 5 --sup_epochs 50 --save
-# srun python genhebb.py --learning_rule hard_WTA_ojas_rule --unsup_epochs 10 --sup_epochs 50 --save
-# srun python genhebb.py --learning_rule hard_WTA_ojas_rule --unsup_epochs 50 --sup_epochs 50 --save
-
-srun python genhebb.py --learning_rule hard_WTA_hebbs_rule --unsup_epochs 1 --sup_epochs 50 --save
-srun python genhebb.py --learning_rule hard_WTA_hebbs_rule --unsup_epochs 5 --sup_epochs 50 --save
-srun python genhebb.py --learning_rule hard_WTA_hebbs_rule --unsup_epochs 10 --sup_epochs 50 --save
-srun python genhebb.py --learning_rule hard_WTA_hebbs_rule --unsup_epochs 50 --sup_epochs 50 --save
+srun python genhebb.py --plasticity_rule ojas_rule --wta_rule hard --unsup_epochs 1 --sup_epochs 50 --save
+srun python genhebb.py --plasticity_rule ojas_rule --wta_rule hard --unsup_epochs 5 --sup_epochs 50 --save
+srun python genhebb.py --plasticity_rule ojas_rule --wta_rule hard --unsup_epochs 10 --sup_epochs 50 --save
+srun python genhebb.py --plasticity_rule ojas_rule --wta_rule hard --unsup_epochs 50 --sup_epochs 50 --save
 
 # srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 1 --sup_epochs 50 --save
 # srun python genhebb.py --learning_rule ojas_rule --unsup_epochs 5 --sup_epochs 50 --save
