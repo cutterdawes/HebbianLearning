@@ -7,7 +7,8 @@ from typing import Callable
 
 
 class Plasticity:
-    def __init__(self, rule: str) -> None:
+    def __init__(self, rule: str
+    ) -> None:
         """
         Plasticity component of learning rule
         """
@@ -67,7 +68,7 @@ class WTA:
             if self.K > 1:
                 _, topK = torch.topk(y, self.K, -1)
                 two_to_K = topK[1:] if topK.dim() == 1 else topK[:,1:]
-                wta += self.delta * torch.sum(F.one_hot(two_to_K), -2)
+                wta += self.delta * torch.sum(F.one_hot(two_to_K, y.shape[-1]), -2)
 
         if self.rule == 'soft':
             raise ValueError(f'Argument rule=soft not implemented yet')
@@ -105,7 +106,7 @@ class LearningRule:
         dW = self.plasticity(x, y, W)
 
         # optionally add competitive component (WTA)
-        if self.wta.rule:
+        if self.wta.rule != 'none':
             wta = self.wta(y)
             dW = wta.unsqueeze(-1) * dW.unsqueeze(0)
 

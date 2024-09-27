@@ -152,10 +152,11 @@ if __name__ == "__main__":
     # unpack kwargs
     if args.kwargs != 'none':
         kwargs = {
-            k: val for k, val in
+            k: float(val) if '.' in val else int(val)
+            for k, val in
             [
                 kwarg.split('=') for kwarg in
-                args.learning_rule.split('-')[-1].split('_')
+                args.kwargs.split('-')[-1].split('_')
             ]}
     else:
         kwargs = {}
