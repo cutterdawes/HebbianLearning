@@ -1,80 +1,116 @@
 """
-Script defining various Hebbian learning rules
+Script defining Hebbian learning rules
 """
 import torch
 import torch.nn.functional as F
+from typing import Callable
 
 
-def hebbs_rule(x, y, W):
-    """
-    return dW according to Hebb's rule: dW = y x^T
-    """
-    dW = y.unsqueeze(-1) * x.unsqueeze(-2)
-    if dW.dim() > 2:
-        dW = torch.mean(dW, 0)
-    return dW
+class Plasticity:
+    def __init__(self, rule: str) -> None:
+        """
+        Plasticity component of learning rule
+        """
+        possible_rules = ['hebbs_rule', 'ojas_rule', 'random_W']
+        if rule not in possible_rules:
+            raise ValueError(f'Argument rule={rule} must be among {possible_rules}')
+        self.rule = rule
 
+    def __call__(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        W: torch.Tensor
+    ) -> torch.Tensor:
+        # compute dW according to specified rule
+        if self.rule == 'hebbs_rule':  # dW = y x^T
+            dW = y.unsqueeze(-1) * x.unsqueeze(-2)
 
-def ojas_rule(x, y, W):
-    """
-    return dW according to Oja's rule: dW_ij = y_i (x_j - y_i W_ij)
-    """
-    dW = y.unsqueeze(-1) * x.unsqueeze(-2) - (y**2).unsqueeze(-1) * W.unsqueeze(0)
-    if dW.dim() > 2:
-        dW = torch.mean(dW, 0)
-    return dW
+        elif self.rule == 'ojas_rule':  # dW_ij = y_i (x_j - y_i W_ij)
+            dW = y.unsqueeze(-1) * x.unsqueeze(-2) - (y**2).unsqueeze(-1) * W.unsqueeze(0)
 
+        elif self.rule == 'random_W':  # dW = 0 (alt. baseline test)
+            dW = torch.zeros_like(W)
 
-def hard_WTA(learning_rule):
-    """
-    decorator to add hard WTA to specified learning rule (i.e., only change weights of "winning" neuron)
-    """
-    def hard_WTA_learning_rule(x, y, W):
-
-        # find winning neuron and create indicator tensor
-        ind_win = torch.zeros_like(y)
-        winners = torch.argmax(y, -1)
-        ind_win = F.one_hot(winners, y.shape[-1]).float()
-
-        # modify dW to only change weights of winning neuron
-        dW = learning_rule(x, y, W)
-        dW = ind_win.unsqueeze(-1) * dW.unsqueeze(0)
+        # take mean if computed over batch
         if dW.dim() > 2:
             dW = torch.mean(dW, 0)
 
         return dW
     
-    return hard_WTA_learning_rule
+    def __str__(self) -> str:
+        return f'Plasticity:\nrule={self.rule}'
 
 
-@hard_WTA
-def hard_WTA_hebbs_rule(x, y, W):
-    """
-    hard WTA added to Hebb's rule
-    """
-    return hebbs_rule(x, y, W)
+class WTA:
+    def __init__(
+        self,
+        rule: str = 'none',
+        K: int = 1,
+        delta: float = 0.4
+    ) -> None:
+        """
+        Competitive component of learning rule
+        """
+        possible_rules = ['hard', 'soft', 'none']
+        if rule not in possible_rules:
+            raise ValueError(f'Argument rule={rule} must be among {possible_rules}')
+        self.rule = rule
+        self.K = K
+        self.delta = delta
+
+    def __call__(self, y: torch.Tensor) -> torch.Tensor:
+        # compute wta according to specified rule
+        if self.rule == 'hard':
+            winner = torch.argmax(y, -1)
+            wta = F.one_hot(winner, y.shape[-1]).float()
+            if self.K > 1:
+                _, topK = torch.topk(y, self.K, -1)
+                two_to_K = topK[1:] if topK.dim() == 1 else topK[:,1:]
+                wta += self.delta * torch.sum(F.one_hot(two_to_K), -2)
+
+        if self.rule == 'soft':
+            raise ValueError(f'Argument rule=soft not implemented yet')
+        return wta
+    
+    def __str__(self) -> str:
+        return f'WTA:\nrule={self.rule},\nK={self.K}, delta={self.delta}'
 
 
-@hard_WTA
-def hard_WTA_ojas_rule(x, y, W):
-    """
-    hard WTA added to Oja's rule
-    """
-    return ojas_rule(x, y, W)
+class LearningRule:
+    def __init__(
+        self,
+        plasticity_rule: str = 'hebbs_rule',
+        wta_rule: str = 'none',
+        **kwargs
+    ) -> None:
+        """
+        Customizable Hebbian learning rule that includes customizable WTA and plasticity components
+        """
+        # pass appropriate kwargs to components
+        plasticity_kwargs = {k: kwargs[k] for k in kwargs if k in {}}
+        wta_kwargs = {k: kwargs[k] for k in kwargs if k in {'K', 'delta'}}
 
+        # set plasticity and competitive components
+        self.plasticity = Plasticity(plasticity_rule, **plasticity_kwargs)
+        self.wta = WTA(wta_rule, **wta_kwargs)
 
-def random_W(x, y, W):
-    """
-    return dW = 0 so that weights remain at random initialization (alt. baseline test)
-    """
-    dW = torch.zeros_like(W)
-    return dW
+    def __call__(
+        self,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        W: torch.Tensor
+    ) -> torch.Tensor:
+        # compute weight change (dW) according to plasticity rule
+        dW = self.plasticity(x, y, W)
 
+        # optionally add competitive component (WTA)
+        if self.wta.rule:
+            wta = self.wta(y)
+            dW = wta.unsqueeze(-1) * dW.unsqueeze(0)
 
-learning_rules = {
-    'hebbs_rule': hebbs_rule,
-    'ojas_rule': ojas_rule,
-    'hard_WTA_hebbs_rule': hard_WTA_hebbs_rule,
-    'hard_WTA_ojas_rule': hard_WTA_ojas_rule,
-    'random_W': random_W
-}
+        # take mean if computed over batch
+        if dW.dim() > 2:
+            dW = torch.mean(dW, 0)
+
+        return dW

@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
 from torch.optim.lr_scheduler import ExponentialLR
 import numpy as np
-from learning_rules import learning_rules
+from learning_rules import LearningRule
 
 
 class HebbianLayer(nn.Module):
@@ -17,23 +17,21 @@ class HebbianLayer(nn.Module):
             self,
             input_dim: int,
             output_dim: int,
-            learning_rule: str,
-            normalized: bool = True  # NOTE: add to script args?
+            plasticity_rule: str = 'hebbs_rule',
+            wta_rule: str = None,
+            normalized: bool = True,  # NOTE: add to script args?
+            **kwargs  # optional learning rule parameters
     ) -> None:
         """
         Fully-connected layer that updates via Hebb's rule
         """
         super(HebbianLayer, self).__init__()
 
-        # set model parameters
+        # set model parameters and learning rule
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.W = nn.Parameter(torch.randn(output_dim, input_dim))
-
-        # set learning rule
-        if learning_rule not in learning_rules.keys():
-            raise ValueError(f'Invalid learning rule: {learning_rule}. Must be one of {list(learning_rules.keys())}')
-        self.learning_rule = learning_rules[learning_rule]
+        self.learning_rule = LearningRule(plasticity_rule, wta_rule, **kwargs)
         
         # optionally normalize W
         self.normalized = normalized
@@ -58,7 +56,9 @@ class GenHebb(nn.Module):
             input_dim: int,
             hidden_dim: int,
             output_dim: int,
-            learning_rule: str
+            plasticity_rule: str = 'hebbs_rule',
+            wta_rule: str = None,
+            **kwargs  # optional learning rule parameters
     ) -> None:
         """
         One-layer fully-connected model with a very simple Hebbian learning rule
@@ -67,7 +67,7 @@ class GenHebb(nn.Module):
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.output_dim = output_dim
-        self.unsup_layer = HebbianLayer(input_dim, hidden_dim, learning_rule)
+        self.unsup_layer = HebbianLayer(input_dim, hidden_dim, plasticity_rule, wta_rule, **kwargs)
         self.classifier = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, x):
@@ -126,8 +126,10 @@ class FastMNIST(MNIST):
 if __name__ == "__main__":
     # create and parse arguments
     parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian learning rule')
-    parser.add_argument('--learning_rule', type=str, default='hebbs_rule', choices=learning_rules.keys(),
-                        help='Choose Hebbian learning rule')
+    parser.add_argument('--plasticity_rule', type=str, default='hebbs_rule', choices=['hebbs_rule', 'ojas_rule', 'random_W'],
+                        help='Choose plasticity rule')
+    parser.add_argument('--wta_rule', type=str, default='none', choices=['hard', 'soft', 'none'], help='Choose competitive WTA rule')
+    parser.add_argument('--kwargs', type=str, default='none', help='Choose optional parameters for Hebbian learning rule')
     parser.add_argument('--hidden_dim', type=int, default=2000, help='Number of neurons in hidden layer (default: 2000)')
     parser.add_argument('--unsup_epochs', type=int, default=1, help='Number of unsupervised epochs (default: 1)')
     parser.add_argument('--sup_epochs', type=int, default=50, help='Number of supervised epochs (default: 50)')
@@ -139,18 +141,31 @@ if __name__ == "__main__":
 
     print(
         f'\nParameters:\n' + 
-        f'\nlearning_rule={args.learning_rule}' +
+        f'\nplasticity_rule={args.plasticity_rule}' +
+        f'\nwta_rule={args.wta_rule}' +
+        f'\nkwargs={args.kwargs}' +
         f'\nhidden_dim={args.hidden_dim}\tbatch_size={args.batch_size}' +
         f'\nunsup_epochs={args.unsup_epochs}\tsup_epochs={args.sup_epochs}' +
         f'\nunsup_lr={args.unsup_lr}\tsup_lr={args.sup_lr}'
     )
 
+    # unpack kwargs
+    if args.kwargs != 'none':
+        kwargs = {
+            k: val for k, val in
+            [
+                kwarg.split('=') for kwarg in
+                args.learning_rule.split('-')[-1].split('_')
+            ]}
+    else:
+        kwargs = {}
+
     # specify device and model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = GenHebb(28*28, args.hidden_dim, 10, args.learning_rule)
+    model = GenHebb(28*28, args.hidden_dim, 10, args.plasticity_rule, args.wta_rule, **kwargs)
     model.to(device)
     model_name = (
-        f'genhebb-{args.learning_rule}'
+        f'genhebb-{args.wta_rule}_{args.plasticity_rule}_{args.kwargs}'
         f'-{args.unsup_epochs}_unsup_epochs-{args.sup_epochs}_sup_epochs'
         f'-{args.unsup_lr}_unsup_lr-{args.sup_lr}_sup_lr-{args.batch_size}_batch'
     )
