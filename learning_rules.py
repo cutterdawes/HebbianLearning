@@ -3,7 +3,6 @@ Script defining Hebbian learning rules
 """
 import torch
 import torch.nn.functional as F
-from typing import Callable
 
 
 class Plasticity:
@@ -48,7 +47,8 @@ class WTA:
         self,
         rule: str = 'none',
         K: int = 1,
-        delta: float = 0.4
+        delta: float = 0.4,
+        temp: float = 1
     ) -> None:
         """
         Competitive component of learning rule
@@ -59,6 +59,7 @@ class WTA:
         self.rule = rule
         self.K = K
         self.delta = delta
+        self.temp = temp
 
     def __call__(self, y: torch.Tensor) -> torch.Tensor:
         # compute wta according to specified rule
@@ -68,21 +69,24 @@ class WTA:
             if self.K > 1:
                 _, topK = torch.topk(y, self.K, -1)
                 two_to_K = topK[1:] if topK.dim() == 1 else topK[:,1:]
-                wta += self.delta * torch.sum(F.one_hot(two_to_K, y.shape[-1]), -2)
+                wta -= self.delta * torch.sum(F.one_hot(two_to_K, y.shape[-1]), -2)
 
         if self.rule == 'soft':
-            raise ValueError(f'Argument rule=soft not implemented yet')
+            winner = torch.argmax(y, -1)
+            wta = F.one_hot(winner, y.shape[-1]).float()
+            wta = torch.softmax(self.temp * y, -1) / y
+        
         return wta
     
     def __str__(self) -> str:
-        return f'WTA:\nrule={self.rule},\nK={self.K}, delta={self.delta}'
+        return f'WTA:\nrule={self.rule},\nK={self.K}, delta={self.delta}, temp={self.temp}'
 
 
 class LearningRule:
     def __init__(
         self,
-        plasticity_rule: str = 'hebbs_rule',
-        wta_rule: str = 'none',
+        plasticity: str = 'hebbs_rule',
+        wta: str = 'none',
         **kwargs
     ) -> None:
         """
@@ -93,8 +97,8 @@ class LearningRule:
         wta_kwargs = {k: kwargs[k] for k in kwargs if k in {'K', 'delta'}}
 
         # set plasticity and competitive components
-        self.plasticity = Plasticity(plasticity_rule, **plasticity_kwargs)
-        self.wta = WTA(wta_rule, **wta_kwargs)
+        self.plasticity = Plasticity(plasticity, **plasticity_kwargs)
+        self.wta = WTA(wta, **wta_kwargs)
 
     def __call__(
         self,
