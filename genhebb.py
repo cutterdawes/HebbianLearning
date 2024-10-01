@@ -56,24 +56,39 @@ class GenHebb(nn.Module):
             input_dim: int,
             hidden_dim: int,
             output_dim: int,
+            n_hebbian_layers: int = 1,
             plasticity: str = 'hebbs_rule',
             wta: str = 'none',
             **kwargs  # optional learning rule parameters
     ) -> None:
         """
-        One-layer fully-connected model with a very simple Hebbian learning rule
+        Multi-layer fully-connected model with a very simple Hebbian learning rule, topped by one-layer linear classifier
         """
         super(GenHebb, self).__init__()
+
+        # set model parameters
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.output_dim = output_dim
-        self.unsup_layer = HebbianLayer(input_dim, hidden_dim, plasticity, wta, **kwargs)
+        self.n_hebbian_layers = n_hebbian_layers
+        
+        # stack unsupervised Hebbian layers
+        layers = []
+        for i in range(n_hebbian_layers):
+            if i == 0:
+                layers.append(HebbianLayer(input_dim, hidden_dim, plasticity, wta, **kwargs))
+            else:
+                layers.append(HebbianLayer(hidden_dim, hidden_dim, plasticity, wta, **kwargs))
+            layers.append(nn.ReLU())
+        self.hebb = nn.Sequential(*layers)
+
+        # add classifier layer
         self.classifier = nn.Linear(hidden_dim, output_dim)
 
     def forward(self, x):
         x = x.view(-1, 28*28)  # NOTE: specific to MNIST
-        # unsupervised Hebbian layer
-        x = F.relu(self.unsup_layer(x))
+        # unsupervised Hebbian embedding
+        x = self.hebb(x)
         # linear classifier
         y = self.classifier(x)
         return y
@@ -127,9 +142,10 @@ if __name__ == "__main__":
     # create and parse arguments
     parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian learning rule')
     parser.add_argument('--plasticity', type=str, default='hebbs_rule', choices=['hebbs_rule', 'ojas_rule', 'random_W'],
-                        help='Choose plasticity rule')
-    parser.add_argument('--wta', type=str, default='none', choices=['hard', 'soft', 'none'], help='Choose competitive WTA rule')
-    parser.add_argument('--learning_params', type=str, default='none', help='Choose optional parameters for Hebbian learning rule')
+                        help='Choose plasticity rule (default: hebbs_rule)')
+    parser.add_argument('--wta', type=str, default='none', choices=['hard', 'soft', 'none'], help='Choose competitive WTA rule (default: none)')
+    parser.add_argument('--learning_params', type=str, default='none', help='Choose optional parameters for Hebbian learning rule (default: none)')
+    parser.add_argument('--n_hebbian_layers', type=int, default=1, help='Number of unsupervised Hebbian layers (default: 1)')
     parser.add_argument('--hidden_dim', type=int, default=2000, help='Number of neurons in hidden layer (default: 2000)')
     parser.add_argument('--unsup_epochs', type=int, default=1, help='Number of unsupervised epochs (default: 1)')
     parser.add_argument('--sup_epochs', type=int, default=50, help='Number of supervised epochs (default: 50)')
@@ -162,7 +178,7 @@ if __name__ == "__main__":
 
     # specify device and model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = GenHebb(28*28, args.hidden_dim, 10, args.plasticity, args.wta, **kwargs)
+    model = GenHebb(28*28, args.hidden_dim, 10, args.n_hebbian_layers, args.plasticity, args.wta, **kwargs)
     model.to(device)
     model_name = (
         f'genhebb-{learning_rule}'
@@ -180,13 +196,13 @@ if __name__ == "__main__":
     # define loss, optimizers, and LR schedulers
     criterion = nn.CrossEntropyLoss()
 
-    unsup_optimizer = optim.Adam(model.unsup_layer.parameters(), lr=args.unsup_lr)
+    unsup_optimizer = optim.Adam(model.hebb.parameters(), lr=args.unsup_lr)
     sup_optimizer = optim.Adam(model.classifier.parameters(), lr=args.sup_lr)
 
     # unsup_scheduler = ExponentialLR(unsup_optimizer, gamma=0.8)  # NOTE: scheduler is turned off
 
     # unsupervised training with Hebbian learning rule
-    print('\n\nTraining unsupervised layer...\n')
+    print('\n\nTraining Hebbian embedding...\n')
     for epoch in range(args.unsup_epochs):
         for inputs, _ in trainloader:
             inputs = inputs.to(device)
@@ -202,15 +218,15 @@ if __name__ == "__main__":
             unsup_optimizer.step()
         # unsup_scheduler.step()  # NOTE: scheduler is turned off
 
-        # compute unsupervised layer statistics
-        print(f'Epoch [{epoch+1}/{args.unsup_epochs}]\t|W|_F: {int(torch.norm(model.unsup_layer.W))}')
+        # compute Hebbian embedding statistics
+        print(f'Epoch [{epoch+1}/{args.unsup_epochs}]')  # NOTE: add back... \t|W|_F: {int(torch.norm(model.unsup_layer.W))}')
         # if args.save:
         #     path = f'saved_models/mid-training/{model_name}-epoch_{epoch+1}.pt'
         #     torch.save(model.state_dict(), path)  # NOTE: not saving mid-training
 
     unsup_optimizer.zero_grad()
-    model.unsup_layer.requires_grad = False
-    model.unsup_layer.eval()
+    model.hebb.requires_grad = False
+    model.hebb.eval()
 
     # supervised training of classifier
     print('\n\nTraining supervised classifier...\n')
