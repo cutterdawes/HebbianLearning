@@ -75,7 +75,7 @@ class WTA:
             winner = torch.argmax(y, -1)
             wta = F.one_hot(winner, y.shape[-1]).float()
             wta = 2 * wta - torch.ones_like(wta)
-            wta *= torch.softmax(self.temp * y, -1) / y  # following implementation of SoftHebb
+            wta *= torch.softmax(self.temp * y, -1)  # following implementation of SoftHebb
         
         return wta
     
