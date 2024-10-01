@@ -15,8 +15,7 @@ class HebbianLayer(nn.Module):
             self,
             input_dim: int,
             output_dim: int,
-            plasticity: str = 'hebbs_rule',
-            wta: str = 'none',
+            learning_rule: LearningRule,
             normalized: bool = True,  # NOTE: add to script args?
             **kwargs  # optional learning rule parameters
     ) -> None:
@@ -29,7 +28,7 @@ class HebbianLayer(nn.Module):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.W = nn.Parameter(torch.randn(output_dim, input_dim))
-        self.learning_rule = LearningRule(plasticity, wta, **kwargs)
+        self.learning_rule = LearningRule(learning_rule, **kwargs)
         
         # optionally normalize W
         self.normalized = normalized
@@ -54,9 +53,8 @@ class GenHebb(nn.Module):
             input_dim: int,
             hidden_dim: int,
             output_dim: int,
+            learning_rule: str,
             n_hebbian_layers: int = 1,
-            plasticity: str = 'hebbs_rule',
-            wta: str = 'none',
             **kwargs  # optional learning rule parameters
     ) -> None:
         """
@@ -68,15 +66,16 @@ class GenHebb(nn.Module):
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.output_dim = output_dim
+        self.learning_rule = LearningRule(learning_rule, **kwargs)
         self.n_hebbian_layers = n_hebbian_layers
         
         # stack unsupervised Hebbian layers
         layers = []
         for i in range(n_hebbian_layers):
             if i == 0:
-                layers.append(HebbianLayer(input_dim, hidden_dim, plasticity, wta, **kwargs))
+                layers.append(HebbianLayer(input_dim, hidden_dim, learning_rule, **kwargs))
             else:
-                layers.append(HebbianLayer(hidden_dim, hidden_dim, plasticity, wta, **kwargs))
+                layers.append(HebbianLayer(hidden_dim, hidden_dim, learning_rule, **kwargs))
             layers.append(nn.ReLU())
         self.hebb = nn.Sequential(*layers)
 
@@ -96,9 +95,7 @@ class GenHebb(nn.Module):
 if __name__ == "__main__":
     # create and parse arguments
     parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian learning rule')
-    parser.add_argument('--plasticity', type=str, default='hebbs_rule', choices=['hebbs_rule', 'ojas_rule', 'random_W'],
-                        help='Choose plasticity rule (default: hebbs_rule)')
-    parser.add_argument('--wta', type=str, default='none', choices=['hard', 'soft', 'none'], help='Choose competitive WTA rule (default: none)')
+    parser.add_argument('--learning_rule', type=str, choices=['hebbs_rule', 'ojas_rule', 'hard_WTA', 'soft_WTA', 'random_W'], help='Choose competitive WTA rule')
     parser.add_argument('--learning_params', type=str, default='none', help='Choose optional parameters for Hebbian learning rule (default: none)')
     parser.add_argument('--n_hebbian_layers', type=int, default=1, help='Number of unsupervised Hebbian layers (default: 1)')
     parser.add_argument('--hidden_dim', type=int, default=2000, help='Number of neurons in hidden layer (default: 2000)')
@@ -111,7 +108,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # unpack and print args
-    learning_rule = args.plasticity if args.wta == 'none' else f'{args.wta}_WTA_{args.plasticity}'
     if args.learning_params != 'none':
         kwargs = {
             k: float(val) if '.' in val else int(val)
@@ -124,7 +120,7 @@ if __name__ == "__main__":
         kwargs = {}
     print(
         f'\nParameters:\n' + 
-        f'\nlearning_rule={learning_rule}' +
+        f'\nlearning_rule={args.learning_rule}' +
         f'\nlearning_params={args.learning_params}' +
         f'\nn_hebbian_layers={args.n_hebbian_layers}' +
         f'\nhidden_dim={args.hidden_dim}\tbatch_size={args.batch_size}' +
@@ -134,10 +130,10 @@ if __name__ == "__main__":
 
     # specify device and model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = GenHebb(28*28, args.hidden_dim, 10, args.n_hebbian_layers, args.plasticity, args.wta, **kwargs)
+    model = GenHebb(28*28, args.hidden_dim, 10, args.learning_rule, args.n_hebbian_layers, **kwargs)
     model.to(device)
     model_name = (
-        f'genhebb-{learning_rule}-{args.learning_params}'
+        f'genhebb-{args.learning_rule}-{args.learning_params}'
         f'-{args.hidden_dim}_hidden_dim-{args.batch_size}_batch'
         f'-{args.unsup_epochs}_unsup_epochs-{args.sup_epochs}_sup_epochs'
         f'-{args.unsup_lr}_unsup_lr-{args.sup_lr}_sup_lr'
@@ -171,7 +167,6 @@ if __name__ == "__main__":
 
             # optimize
             unsup_optimizer.step()
-        # unsup_scheduler.step()  # NOTE: scheduler is turned off
 
         # compute Hebbian embedding statistics
         norms = [int(torch.norm(model.hebb[2*i].W)) for i in range(model.n_hebbian_layers)]
