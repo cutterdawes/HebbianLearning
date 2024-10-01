@@ -74,7 +74,8 @@ class WTA:
         if self.rule == 'soft':
             winner = torch.argmax(y, -1)
             wta = F.one_hot(winner, y.shape[-1]).float()
-            wta = torch.softmax(self.temp * y, -1) / y
+            wta = 2 * wta - torch.ones_like(wta)
+            wta *= torch.softmax(self.temp * y, -1) / y  # following implementation of SoftHebb
         
         return wta
     

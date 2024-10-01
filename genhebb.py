@@ -44,17 +44,7 @@ class HebbianLayer(nn.Module):
 
         # compute specified Hebbian learning rule, store in grad
         if self.training:
-            dW = self.learning_rule(x, y, self.W)
-            # import pdb; pdb.set_trace()
-            count = 0
-            updated = []
-            for n in range(100):
-                if not (dW[n, :] == 0).all():
-                    count += 1
-                    updated.append(n)
-            print(updated)
-            # print(count)
-            
+            dW = self.learning_rule(x, y, self.W)            
             self.W.grad = -dW  # negate bc gradient descent
 
         return y

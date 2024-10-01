@@ -48,7 +48,7 @@ if __name__ == "__main__":
 
     print(
         f'\nParameters:\n' + 
-        f'\nlearning_rule=BP' +
+        f'\nlearning_rule=supervised_BP' +
         f'\nhidden_dim={args.hidden_dim}\tbatch_size={args.batch_size}' +
         f'\nepochs={args.epochs}\tlearning_rate={args.learning_rate}'
     )
