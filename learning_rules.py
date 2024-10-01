@@ -34,6 +34,7 @@ class Plasticity:
 
         # take mean if computed over batch
         if dW.dim() > 2:
+            import pdb; pdb.set_trace()
             dW = torch.mean(dW, 0)
 
         return dW
@@ -70,12 +71,14 @@ class WTA:
                 _, topK = torch.topk(y, self.K, -1)
                 two_to_K = topK[1:] if topK.dim() == 1 else topK[:,1:]
                 wta -= self.delta * torch.sum(F.one_hot(two_to_K, y.shape[-1]), -2)
+                # Kth = topK[-1] if topK.dim() == 1 else topK[:,-1]
+                # wta -= self.delta * F.one_hot(Kth, y.shape[-1])
 
         if self.rule == 'soft':
             winner = torch.argmax(y, -1)
             wta = F.one_hot(winner, y.shape[-1]).float()
             wta = 2 * wta - torch.ones_like(wta)
-            wta *= torch.softmax(self.temp * y, -1)  # NOT following implementation of SoftHebb
+            wta *= torch.softmax(self.temp * y, -1) / y  # following implementation of SoftHebb
         
         return wta
     
@@ -114,6 +117,18 @@ class LearningRule:
         if self.wta.rule != 'none':
             wta = self.wta(y)
             dW = wta.unsqueeze(-1) * dW.unsqueeze(0)
+
+        # hebbian and anti-hebbian plasticity
+        dW_hebb = y.unsqueeze(-1) * x.unsqueeze(-2) - (y**2).unsqueeze(-1) * W.unsqueeze(0)
+        dW_anti_hebb = y.unsqueeze(-1) * x.unsqueeze(-2) + (y**2).unsqueeze(-1) * W.unsqueeze(0)
+        
+        # wta rules
+        winner = torch.argmax(y, -1)
+        winner = F.one_hot(winner, y.shape[-1]).float()
+        losers = torch.ones_like(winner) - winner
+
+        # dW = winner.unsqueeze(-1) * dW_hebb.unsqueeze(0) - losers.unsqueeze(-1) + dW_anti_hebb.unsqueeze(0)
+        import pdb; pdb.set_trace()
 
         # take mean if computed over batch
         if dW.dim() > 2:

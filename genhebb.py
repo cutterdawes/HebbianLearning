@@ -137,9 +137,10 @@ if __name__ == "__main__":
     model = GenHebb(28*28, args.hidden_dim, 10, args.n_hebbian_layers, args.plasticity, args.wta, **kwargs)
     model.to(device)
     model_name = (
-        f'genhebb-{learning_rule}'
+        f'genhebb-{learning_rule}-{args.learning_params}'
+        f'-{args.hidden_dim}_hidden_dim-{args.batch_size}_batch'
         f'-{args.unsup_epochs}_unsup_epochs-{args.sup_epochs}_sup_epochs'
-        f'-{args.unsup_lr}_unsup_lr-{args.sup_lr}_sup_lr-{args.batch_size}_batch'
+        f'-{args.unsup_lr}_unsup_lr-{args.sup_lr}_sup_lr'
     )
 
     # load train and test data
