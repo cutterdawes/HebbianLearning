@@ -5,11 +5,8 @@ import argparse
 import torch
 from torch import nn, optim
 import torch.nn.functional as F
-from torch.nn.modules.utils import _pair
-from torch.optim.lr_scheduler import StepLR
 from torch.utils.data import DataLoader
-from torchvision.datasets import MNIST
-from genhebb import FastMNIST
+from dataset import FastMNIST
 
 
 class Baseline(nn.Module):

@@ -16,6 +16,7 @@ conda activate hebbian
 # srun python genhebb.py --plasticity ojas_rule --wta hard --unsup_epochs 10 --sup_epochs 50 --save
 # srun python genhebb.py --plasticity ojas_rule --wta hard --unsup_epochs 50 --sup_epochs 50 --save
 # srun python genhebb.py --plasticity ojas_rule --wta hard --unsup_epochs 100 --sup_epochs 100 --save
+srun python genhebb.py --plasticity ojas_rule --wta soft --unsup_epochs 100 --sup_epochs 100 --save
 
-srun python baseline.py --save
-srun python genhebb.py --plasticity random_W --save
+srun python baseline.py --epochs 100 --save
+srun python genhebb.py --plasticity random_W --sup_epochs 100 --save

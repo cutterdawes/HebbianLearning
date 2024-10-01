@@ -6,9 +6,7 @@ import torch
 from torch import nn, optim
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from torchvision.datasets import MNIST
-from torch.optim.lr_scheduler import ExponentialLR
-import numpy as np
+from dataset import FastMNIST
 from learning_rules import LearningRule
 
 
@@ -92,49 +90,6 @@ class GenHebb(nn.Module):
         # linear classifier
         y = self.classifier(x)
         return y
-        
-    
-class FastMNIST(MNIST):
-    """
-    Improves performance of training on MNIST by removing the PIL interface and pre-loading on the GPU (2-3x speedup)
-
-    Taken from https://github.com/y0ast/pytorch-snippets/tree/main/fast_mnist
-    """
-
-    def __init__(self, *args, **kwargs):
-        device = kwargs.pop('device', 'cpu')
-        train_class = kwargs.pop('train_class', 'all')
-        split = kwargs.pop('split', 'train')
-        super().__init__(*args, **kwargs)
-
-        self.split = split
-
-        if self.train:
-            if not isinstance(train_class, str):
-                print(train_class)
-                self.targets = np.array(self.targets)
-                index_class = np.isin(self.targets, train_class)
-                self.data = self.data[index_class]
-                self.targets = self.targets[index_class]
-                self.len = self.data.shape[0]
-
-        # Scale data to [0,1]
-        self.data = self.data.unsqueeze(1).float().div(255)
-        self.data = self.data.to(device)
-
-        self.targets = self.targets.to(device)
-
-    def __getitem__(self, index):
-        """
-        Args:
-            index (int): Index
-
-        Returns:
-            tuple: (image, target) where target is index of the target class.
-        """
-        img, target = self.data[index], self.targets[index]
-
-        return img, target
 
 
 # Main training loop MNIST
@@ -171,6 +126,7 @@ if __name__ == "__main__":
         f'\nParameters:\n' + 
         f'\nlearning_rule={learning_rule}' +
         f'\nlearning_params={args.learning_params}' +
+        f'\nn_hebbian_layers={args.n_hebbian_layers}' +
         f'\nhidden_dim={args.hidden_dim}\tbatch_size={args.batch_size}' +
         f'\nunsup_epochs={args.unsup_epochs}\tsup_epochs={args.sup_epochs}' +
         f'\nunsup_lr={args.unsup_lr}\tsup_lr={args.sup_lr}'
@@ -198,8 +154,6 @@ if __name__ == "__main__":
 
     unsup_optimizer = optim.Adam(model.hebb.parameters(), lr=args.unsup_lr)
     sup_optimizer = optim.Adam(model.classifier.parameters(), lr=args.sup_lr)
-
-    # unsup_scheduler = ExponentialLR(unsup_optimizer, gamma=0.8)  # NOTE: scheduler is turned off
 
     # unsupervised training with Hebbian learning rule
     print('\n\nTraining Hebbian embedding...\n')
