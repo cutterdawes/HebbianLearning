@@ -219,7 +219,9 @@ if __name__ == "__main__":
         # unsup_scheduler.step()  # NOTE: scheduler is turned off
 
         # compute Hebbian embedding statistics
-        print(f'Epoch [{epoch+1}/{args.unsup_epochs}]')  # NOTE: add back... \t|W|_F: {int(torch.norm(model.unsup_layer.W))}')
+        norms = [int(torch.norm(model.hebb[2*i].W)) for i in range(model.n_hebbian_layers)]
+        norms = ', '.join(map(str, norms))
+        print(f'Epoch [{epoch+1}/{args.unsup_epochs}]\t|W|_F: {norms}')
         # if args.save:
         #     path = f'saved_models/mid-training/{model_name}-epoch_{epoch+1}.pt'
         #     torch.save(model.state_dict(), path)  # NOTE: not saving mid-training
