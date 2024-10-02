@@ -28,6 +28,7 @@ class HebbianLayer(nn.Module):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.W = nn.Parameter(torch.randn(output_dim, input_dim))
+        self.a = nn.ReLU()
         self.learning_rule = LearningRule(learning_rule, **kwargs)
         
         # optionally normalize W
@@ -37,7 +38,7 @@ class HebbianLayer(nn.Module):
 
     def forward(self, x):
         # standard forward pass
-        y = torch.matmul(x, self.W.T)
+        y = self.a(torch.matmul(x, self.W.T))  # NOTE: added ReLU activation to Hebbian layer
 
         # compute specified Hebbian learning rule, store in grad
         if self.training:
@@ -76,7 +77,6 @@ class GenHebb(nn.Module):
                 layers.append(HebbianLayer(input_dim, hidden_dim, learning_rule, **kwargs))
             else:
                 layers.append(HebbianLayer(hidden_dim, hidden_dim, learning_rule, **kwargs))
-            layers.append(nn.ReLU())
         self.hebb = nn.Sequential(*layers)
 
         # add classifier layer
@@ -109,13 +109,15 @@ if __name__ == "__main__":
 
     # unpack and print args
     if args.learning_params != 'none':
-        kwargs = {
-            k: float(val) if '.' in val else int(val)
-            for k, val in
-            [
-                kwarg.split('=') for kwarg in
-                args.learning_params.split('-')[-1].split('_')
-            ]}
+        kwargs = {}
+        for kwarg in args.learning_params.split('_'):
+            k, val = kwarg.split('=')
+            if k == 'K':
+                kwargs[k] = int(val)
+            elif k == 'delta' or k == 'temp':
+                kwargs[k] = float(val)
+            elif k == 'toK':
+                kwargs[k] = bool(val)
     else:
         kwargs = {}
     print(

@@ -1,8 +1,8 @@
 """
 Script defining Hebbian learning rules
 """
-from typing import Any
 import torch
+from torch import nn
 import torch.nn.functional as F
 
 
@@ -24,17 +24,24 @@ class OjasRule:
         y: torch.Tensor,
         W: torch.Tensor
     ) -> torch.Tensor:
-        dW = y.unsqueeze(-1) * (x.unsqueeze(-2) - y.unsqueeze(-1) * W.unsqueeze(0))  # dW_ij = y_i (x_j - y_i W_ij)
+        Wx = torch.matmul(x, W.T)
+        dW = y.unsqueeze(-1) * (x.unsqueeze(-2) - Wx.unsqueeze(-1) * W.unsqueeze(0))  # dW_ij = y_i (x_j - (Wx)_i W_ij)
         return dW
 
 
 class HardWTA:
     def __init__(
             self,
-            K: int = 1,
-            delta: float = 0.4
+            N_hebb: int = 1,
+            N_anti: int = 0,
+            K_anti: int = 1,
+            delta: float = 0.4,
     ) -> None:
-        self.K = K
+        if N_hebb >= K_anti:
+            raise ValueError()
+        self.N_hebb = N_hebb
+        self.N_anti = N_anti
+        self.K_anti = K_anti
         self.delta = delta
 
     def __call__(
@@ -44,22 +51,34 @@ class HardWTA:
         W: torch.Tensor
     ) -> torch.Tensor:
         
-        # compute plasticity rule
-        dW = y.unsqueeze(-1) * x.unsqueeze(-2) - (y**2).unsqueeze(-1) * W.unsqueeze(0)
+        # compute Hebb's rule and first-order normalization
+        dW_hebb = y.unsqueeze(-1) * x.unsqueeze(-2)
+        dW_norm = torch.abs(y).unsqueeze(-1) * W.unsqueeze(0)
 
-        # compute winner and Kth most activated
-        winner = torch.argmax(y, -1)
-        wta = F.one_hot(winner, y.shape[-1]).float()
-        if self.K > 1:
-            _, topK = torch.topk(y, self.K, -1)
-            # two_to_K = topK[1:] if topK.dim() == 1 else topK[:,1:]
-            # wta -= self.delta * torch.sum(F.one_hot(two_to_K, y.shape[-1]), -2)
-            Kth = topK[-1] if topK.dim() == 1 else topK[:,-1]
-            wta -= self.delta * F.one_hot(Kth, y.shape[-1])
+        # compute neurons to be updated (Hebbian and anti-Hebbian)
+        if self.N_hebb > 1:
+            _, hebb = torch.topk(y, self.N_hebb, -1)
+            hebb = torch.sum(F.one_hot(hebb, y.shape[-1]), -2)
+        else:
+            hebb = torch.argmax(y, -1)
+            hebb = F.one_hot(hebb, y.shape[-1]).float()
+
+        if self.N_anti > 0:
+            _, anti = torch.topk(y, self.K_anti+self.N_anti, -1)
+            if self.N_anti > 1:
+                anti = anti[self.K_anti:] if anti.dim() == 1 else anti[:,self.K_anti:]
+                anti = torch.sum(F.one_hot(anti, y.shape[-1]), -2)
+            elif self.N_anti == 1:
+                anti = anti[-1] if anti.dim() == 1 else anti[:,-1]
+                anti = F.one_hot(anti, y.shape[-1])
+        else:
+            anti = torch.zeros_like(hebb)
+        wta_hebb = hebb - self.delta * anti
+        wta_norm = hebb + self.delta * anti
 
         # modify dW according to WTA
-        dW *= wta.unsqueeze(-1)
-        
+        dW = wta_hebb.unsqueeze(-1) * dW_hebb - wta_norm.unsqueeze(-1) * dW_norm
+
         return dW
 
 
@@ -80,12 +99,12 @@ class SoftWTA:
         # compute softmaxed activations (anti-Hebbian for losers)
         winner = torch.argmax(y, -1)
         wta = F.one_hot(winner, y.shape[-1]).float()
-        wta = 2 * wta - torch.ones_like(wta)
+        # wta = 2 * wta - torch.ones_like(wta)
         y_soft = wta * torch.softmax(self.temp * y, -1)
 
         # compute SoftHebb update
-        dW = y_soft.unsqueeze(-1) * (x.unsqueeze(-2) - y.unsqueeze(-1) * W.unsqueeze(0))
-        # import pdb; pdb.set_trace()
+        Wx = torch.matmul(x, W.T)
+        dW = y_soft.unsqueeze(-1) * (x.unsqueeze(-2) - Wx.unsqueeze(-1) * W.unsqueeze(0))
 
         return dW
     
@@ -133,11 +152,3 @@ class LearningRule:
             dW = torch.mean(dW, 0)
 
         return dW
-
-
-if __name__ == "__main__":
-    rule = HardWTA(K=2)
-    W = torch.randn(5, 3)
-    x = torch.randn(3)
-    y = torch.matmul(x, W.T)
-    rule(x, y, W)

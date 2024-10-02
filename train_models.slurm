@@ -12,4 +12,4 @@ source ~/.bashrc
 conda activate hebbian
 
 # train models
-srun python genhebb.py --learning_rule hard_WTA --unsup_epochs 50 --save
+srun python genhebb.py --learning_rule soft_WTA --unsup_epochs 100 --sup_epochs 100 --save
