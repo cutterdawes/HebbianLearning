@@ -29,19 +29,66 @@ class OjasRule:
         return dW
 
 
+# class HardWTA:
+#     def __init__(
+#             self,
+#             N_hebb: int = 1,
+#             N_anti: int = 0,
+#             K_anti: int = 1,
+#             delta: float = 0.4,
+#     ) -> None:
+#         if N_hebb >= K_anti:
+#             raise ValueError()
+#         self.N_hebb = N_hebb
+#         self.N_anti = N_anti
+#         self.K_anti = K_anti
+#         self.delta = delta
+
+#     def __call__(
+#         self,
+#         x: torch.Tensor,
+#         y: torch.Tensor,
+#         W: torch.Tensor
+#     ) -> torch.Tensor:
+        
+#         # compute Hebb's rule and first-order normalization
+#         Wx = torch.matmul(x, W.T)
+#         dW_hebb = y.unsqueeze(-1) * x.unsqueeze(-2)
+#         dW_norm = Wx.unsqueeze(-1) * W.unsqueeze(0)
+
+#         # compute neurons to be updated (Hebbian and anti-Hebbian)
+#         if self.N_hebb > 1:
+#             _, hebb = torch.topk(y, self.N_hebb, -1)
+#             hebb = torch.sum(F.one_hot(hebb, y.shape[-1]), -2)
+#         else:
+#             hebb = torch.argmax(y, -1)
+#             hebb = F.one_hot(hebb, y.shape[-1]).float()
+
+#         if self.N_anti > 0:
+#             _, anti = torch.topk(y, self.K_anti+self.N_anti, -1)
+#             if self.N_anti > 1:
+#                 anti = anti[self.K_anti:] if anti.dim() == 1 else anti[:,self.K_anti:]
+#                 anti = torch.sum(F.one_hot(anti, y.shape[-1]), -2)
+#             elif self.N_anti == 1:
+#                 anti = anti[-1] if anti.dim() == 1 else anti[:,-1]
+#                 anti = F.one_hot(anti, y.shape[-1])
+#         else:
+#             anti = torch.zeros_like(hebb)
+#         wta_hebb = hebb - self.delta * anti
+#         wta_norm = hebb + self.delta * anti
+
+#         # modify dW according to WTA
+#         dW = wta_hebb.unsqueeze(-1) * dW_hebb - wta_norm.unsqueeze(-1) * dW_norm
+
+#         return dW
+
 class HardWTA:
     def __init__(
             self,
-            N_hebb: int = 1,
-            N_anti: int = 0,
-            K_anti: int = 1,
-            delta: float = 0.4,
+            K: int = 1,
+            delta: float = 0.4
     ) -> None:
-        if N_hebb >= K_anti:
-            raise ValueError()
-        self.N_hebb = N_hebb
-        self.N_anti = N_anti
-        self.K_anti = K_anti
+        self.K = K
         self.delta = delta
 
     def __call__(
@@ -51,34 +98,21 @@ class HardWTA:
         W: torch.Tensor
     ) -> torch.Tensor:
         
-        # compute Hebb's rule and first-order normalization
-        dW_hebb = y.unsqueeze(-1) * x.unsqueeze(-2)
-        dW_norm = torch.abs(y).unsqueeze(-1) * W.unsqueeze(0)
+        # compute plasticity rule
+        Wx = torch.matmul(x, W.T)
+        dW = y.unsqueeze(-1) * (x.unsqueeze(-2) - Wx.unsqueeze(-1) * W.unsqueeze(0))
 
-        # compute neurons to be updated (Hebbian and anti-Hebbian)
-        if self.N_hebb > 1:
-            _, hebb = torch.topk(y, self.N_hebb, -1)
-            hebb = torch.sum(F.one_hot(hebb, y.shape[-1]), -2)
-        else:
-            hebb = torch.argmax(y, -1)
-            hebb = F.one_hot(hebb, y.shape[-1]).float()
-
-        if self.N_anti > 0:
-            _, anti = torch.topk(y, self.K_anti+self.N_anti, -1)
-            if self.N_anti > 1:
-                anti = anti[self.K_anti:] if anti.dim() == 1 else anti[:,self.K_anti:]
-                anti = torch.sum(F.one_hot(anti, y.shape[-1]), -2)
-            elif self.N_anti == 1:
-                anti = anti[-1] if anti.dim() == 1 else anti[:,-1]
-                anti = F.one_hot(anti, y.shape[-1])
-        else:
-            anti = torch.zeros_like(hebb)
-        wta_hebb = hebb - self.delta * anti
-        wta_norm = hebb + self.delta * anti
+        # compute winner and Kth most activated
+        winner = torch.argmax(y, -1)
+        wta = F.one_hot(winner, y.shape[-1]).float()
+        if self.K > 1:
+            _, topK = torch.topk(y, self.K, -1)
+            Kth = topK[-1] if topK.dim() == 1 else topK[:,-1]
+            wta -= self.delta * F.one_hot(Kth, y.shape[-1])
 
         # modify dW according to WTA
-        dW = wta_hebb.unsqueeze(-1) * dW_hebb - wta_norm.unsqueeze(-1) * dW_norm
-
+        dW *= wta.unsqueeze(-1)
+        
         return dW
 
 
