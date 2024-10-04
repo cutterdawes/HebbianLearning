@@ -16,6 +16,7 @@ class HebbianLayer(nn.Module):
             input_dim: int,
             output_dim: int,
             learning_rule: LearningRule,
+            beta: float = 1,
             normalized: bool = True,  # NOTE: add to script args?
             **kwargs  # optional learning rule parameters
     ) -> None:
@@ -30,6 +31,11 @@ class HebbianLayer(nn.Module):
         self.W = nn.Parameter(torch.randn(output_dim, input_dim))
         self.a = nn.ReLU()
         self.learning_rule = LearningRule(learning_rule, **kwargs)
+
+        # initialize x trajectory variables
+        self.beta = beta
+        self.x_prev = torch.tensor(0)
+        self.x_mem = torch.tensor(0)
         
         # optionally normalize W
         self.normalized = normalized
@@ -38,13 +44,21 @@ class HebbianLayer(nn.Module):
 
     def forward(self, x):
         # standard forward pass
-        y = self.a(torch.matmul(x, self.W.T))  # NOTE: added ReLU activation to Hebbian layer
+        y = self.a(torch.matmul(x, self.W.T))
 
-        # compute specified Hebbian learning rule, store in grad
+        # learning update
         if self.training:
-            dW = self.learning_rule(x, y, self.W)            
-            self.W.grad = -dW  # negate bc gradient descent
+            try:
+                # update trajectory
+                x_dot = x - self.x_prev
+                self.x_prev = x
+                self.x_mem = x_dot + self.beta * self.x_mem
 
+                # compute specified Hebbian learning rule, store in grad
+                dW = self.learning_rule(self.x_mem, y, self.W)
+            except:
+                dW = torch.zeros_like(self.W)
+            self.W.grad = -dW  # negate bc gradient descent
         return y
     
 
@@ -56,6 +70,7 @@ class GenHebb(nn.Module):
             output_dim: int,
             learning_rule: str,
             n_hebbian_layers: int = 1,
+            beta: float = 1,
             **kwargs  # optional learning rule parameters
     ) -> None:
         """
@@ -74,9 +89,9 @@ class GenHebb(nn.Module):
         layers = []
         for i in range(n_hebbian_layers):
             if i == 0:
-                layers.append(HebbianLayer(input_dim, hidden_dim, learning_rule, **kwargs))
+                layers.append(HebbianLayer(input_dim, hidden_dim, learning_rule, beta, **kwargs))
             else:
-                layers.append(HebbianLayer(hidden_dim, hidden_dim, learning_rule, **kwargs))
+                layers.append(HebbianLayer(hidden_dim, hidden_dim, learning_rule, beta, **kwargs))
         self.hebb = nn.Sequential(*layers)
 
         # add classifier layer
@@ -96,6 +111,8 @@ if __name__ == "__main__":
     # create and parse arguments
     parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian learning rule')
     parser.add_argument('--learning_rule', type=str, choices=['hebbs_rule', 'ojas_rule', 'hard_WTA', 'soft_WTA', 'random_W'], help='Choose competitive WTA rule')
+    parser.add_argument('--beta', type=float, default=1,
+                        help='Trajectory parameter: x_mem = sum_t beta^{T-t} (x_t - x_{t-1}); if beta=1, reduces to x_mem = x_t, if beta=0, reduces to x_mem = x_dot')
     # parser.add_argument('--learning_params', default='none', help='Choose optional parameters for Hebbian learning rule (default: none)')
     parser.add_argument('--n_hebbian_layers', type=int, default=1, help='Number of unsupervised Hebbian layers (default: 1)')
     parser.add_argument('--hidden_dim', type=int, default=2000, help='Number of neurons in hidden layer (default: 2000)')
@@ -129,7 +146,7 @@ if __name__ == "__main__":
 
     # specify device and model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = GenHebb(28*28, args.hidden_dim, 10, args.learning_rule, args.n_hebbian_layers, **kwargs)
+    model = GenHebb(28*28, args.hidden_dim, 10, args.learning_rule, args.n_hebbian_layers, args.beta, **kwargs)
     model.to(device)
     model_name = (
         f'genhebb-{args.learning_rule}-{learning_params}'
@@ -139,10 +156,10 @@ if __name__ == "__main__":
     )
 
     # load train and test data
-    trainset = FastMNIST('./data', train=True, download=True)
+    trainset = FastMNIST('./data', train=True, download=True, device=device)
     trainloader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True)
 
-    testset = FastMNIST('./data', train=False, download=True)
+    testset = FastMNIST('./data', train=False, download=True, device=device)
     testloader = DataLoader(testset, batch_size=args.batch_size, shuffle=False)
 
     # define loss, optimizers, and LR schedulers
