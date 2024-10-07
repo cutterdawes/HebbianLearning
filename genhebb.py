@@ -122,7 +122,7 @@ if __name__ == "__main__":
         f'\nParameters:\n' + 
         f'\nlearning_rule={args.learning_rule}' +
         f'\nlearning_params={args.learning_params}' +
-        f'\nn_hebbian_layers={args.n_hebbian_layers}' +
+        f'\nn_hebbian_layers={args.n_hebbian_layers}\n' +
         f'\nhidden_dim={args.hidden_dim}\tbatch_size={args.batch_size}' +
         f'\nunsup_epochs={args.unsup_epochs}\tsup_epochs={args.sup_epochs}' +
         f'\nunsup_lr={args.unsup_lr}\tsup_lr={args.sup_lr}'
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     model = GenHebb(28*28, args.hidden_dim, 10, args.learning_rule, args.n_hebbian_layers, **kwargs)
     model.to(device)
     model_name = (
-        f'genhebb-{args.learning_rule}-{args.learning_params}'
+        f'genhebb-{args.learning_rule}-{args.learning_params}-{args.n_hebbian_layers}_hebbian_layers'
         f'-{args.hidden_dim}_hidden_dim-{args.batch_size}_batch'
         f'-{args.unsup_epochs}_unsup_epochs-{args.sup_epochs}_sup_epochs'
         f'-{args.unsup_lr}_unsup_lr-{args.sup_lr}_sup_lr'
