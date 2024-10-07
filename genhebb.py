@@ -16,7 +16,6 @@ class HebbianLayer(nn.Module):
             input_dim: int,
             output_dim: int,
             learning_rule: LearningRule,
-            beta: float = 1,
             normalized: bool = True,  # NOTE: add to script args?
             **kwargs  # optional learning rule parameters
     ) -> None:
@@ -31,11 +30,6 @@ class HebbianLayer(nn.Module):
         self.W = nn.Parameter(torch.randn(output_dim, input_dim))
         self.a = nn.ReLU()
         self.learning_rule = LearningRule(learning_rule, **kwargs)
-
-        # initialize x trajectory variables
-        self.beta = beta
-        self.x_prev = torch.tensor(0)
-        self.x_mem = torch.tensor(0)
         
         # optionally normalize W
         self.normalized = normalized
@@ -46,19 +40,11 @@ class HebbianLayer(nn.Module):
         # standard forward pass
         y = self.a(torch.matmul(x, self.W.T))
 
-        # learning update
+        # compute specified Hebbian learning rule, store in grad
         if self.training:
-            try:
-                # update trajectory
-                x_dot = x - self.x_prev
-                self.x_prev = x
-                self.x_mem = x_dot + self.beta * self.x_mem
-
-                # compute specified Hebbian learning rule, store in grad
-                dW = self.learning_rule(self.x_mem, y, self.W)
-            except:
-                dW = torch.zeros_like(self.W)
+            dW = self.learning_rule(x, y, self.W)
             self.W.grad = -dW  # negate bc gradient descent
+
         return y
     
 
@@ -70,7 +56,6 @@ class GenHebb(nn.Module):
             output_dim: int,
             learning_rule: str,
             n_hebbian_layers: int = 1,
-            beta: float = 1,
             **kwargs  # optional learning rule parameters
     ) -> None:
         """
@@ -89,9 +74,9 @@ class GenHebb(nn.Module):
         layers = []
         for i in range(n_hebbian_layers):
             if i == 0:
-                layers.append(HebbianLayer(input_dim, hidden_dim, learning_rule, beta, **kwargs))
+                layers.append(HebbianLayer(input_dim, hidden_dim, learning_rule, **kwargs))
             else:
-                layers.append(HebbianLayer(hidden_dim, hidden_dim, learning_rule, beta, **kwargs))
+                layers.append(HebbianLayer(hidden_dim, hidden_dim, learning_rule, **kwargs))
         self.hebb = nn.Sequential(*layers)
 
         # add classifier layer
@@ -111,9 +96,7 @@ if __name__ == "__main__":
     # create and parse arguments
     parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian learning rule')
     parser.add_argument('--learning_rule', type=str, choices=['hebbs_rule', 'ojas_rule', 'hard_WTA', 'soft_WTA', 'random_W'], help='Choose competitive WTA rule')
-    parser.add_argument('--beta', type=float, default=1,
-                        help='Trajectory parameter: x_mem = sum_t beta^{T-t} (x_t - x_{t-1}); if beta=1, reduces to x_mem = x_t, if beta=0, reduces to x_mem = x_dot')
-    # parser.add_argument('--learning_params', default='none', help='Choose optional parameters for Hebbian learning rule (default: none)')
+    parser.add_argument('--learning_params', default='none', help='Choose optional parameters for Hebbian learning rule (default: none)')
     parser.add_argument('--n_hebbian_layers', type=int, default=1, help='Number of unsupervised Hebbian layers (default: 1)')
     parser.add_argument('--hidden_dim', type=int, default=2000, help='Number of neurons in hidden layer (default: 2000)')
     parser.add_argument('--unsup_epochs', type=int, default=1, help='Number of unsupervised epochs (default: 1)')
@@ -122,22 +105,23 @@ if __name__ == "__main__":
     parser.add_argument('--sup_lr', type=float, default=0.001, help='Supervised learning rate (default: 0.001)')
     parser.add_argument('--batch_size', type=int, default=64, help='Batch size (default: 64)')
     parser.add_argument('--save', action='store_true', help='Save model')
-    args, unknown = parser.parse_known_args()
+    args = parser.parse_args()
 
     # unpack and print args
     kwargs = {}
-    for arg in unknown:
-        k, val = arg.split('=')
-        if k in ['N_hebb', 'N_anti', 'K_anti']:
-            kwargs[k] = int(val)
-        elif k == 'delta' or k == 'temp':
-            kwargs[k] = float(val)
-    learning_params = '_'.join([f'{k}={val}' for k, val in kwargs.items()])
+    if args.learning_params != 'none':
+        for arg in args.learning_params.split('_'):
+            k, val = arg.split('=')
+            if k in ['N_hebb', 'N_anti', 'K_anti']:  # NOTE: not working currently
+                kwargs[k] = int(val)
+            elif k == 'delta' or k == 'temp' or k == 'beta':
+                kwargs[k] = float(val)
+            args.learning_params = '_'.join([f'{k}={val}' for k, val in kwargs.items()])
     
     print(
         f'\nParameters:\n' + 
         f'\nlearning_rule={args.learning_rule}' +
-        f'\nlearning_params={learning_params}' +
+        f'\nlearning_params={args.learning_params}' +
         f'\nn_hebbian_layers={args.n_hebbian_layers}' +
         f'\nhidden_dim={args.hidden_dim}\tbatch_size={args.batch_size}' +
         f'\nunsup_epochs={args.unsup_epochs}\tsup_epochs={args.sup_epochs}' +
@@ -146,10 +130,10 @@ if __name__ == "__main__":
 
     # specify device and model
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = GenHebb(28*28, args.hidden_dim, 10, args.learning_rule, args.n_hebbian_layers, args.beta, **kwargs)
+    model = GenHebb(28*28, args.hidden_dim, 10, args.learning_rule, args.n_hebbian_layers, **kwargs)
     model.to(device)
     model_name = (
-        f'genhebb-{args.learning_rule}-{learning_params}'
+        f'genhebb-{args.learning_rule}-{args.learning_params}'
         f'-{args.hidden_dim}_hidden_dim-{args.batch_size}_batch'
         f'-{args.unsup_epochs}_unsup_epochs-{args.sup_epochs}_sup_epochs'
         f'-{args.unsup_lr}_unsup_lr-{args.sup_lr}_sup_lr'
