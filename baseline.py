@@ -4,7 +4,6 @@ Script that provides a baseline trained with BP end-to-end to compare with vario
 import argparse
 import torch
 from torch import nn, optim
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from dataset import FastMNIST
 
@@ -16,20 +15,37 @@ class Baseline(nn.Module):
     def __init__(self,
                 input_dim: int,
                 hidden_dim: int,
-                output_dim: int
+                output_dim: int,
+                n_hidden_layers: int = 1,
+                dropout_p: float = 0
                 ) -> None:
         super(Baseline, self).__init__()
+
+        # set model parameters
         self.input_dim = input_dim
         self.hidden_dim = hidden_dim
         self.output_dim = output_dim
-        self.input = nn.Linear(input_dim, hidden_dim, bias=False)
-        self.output = nn.Linear(hidden_dim, output_dim)
+
+        # stack hidden layers
+        layers = []
+        for i in range(n_hidden_layers):
+            if i == 0:
+                layers.append(nn.Linear(input_dim, hidden_dim, bias=False))
+            else:
+                layers.append(nn.Linear(hidden_dim, hidden_dim, bias=False))
+            layers.append(nn.ReLU())
+            if dropout_p > 0:
+                layers.append(nn.Dropout(dropout_p))
+        self.hidden = nn.Sequential(*layers)
+
+        # add classifier layer
+        self.classifier = nn.Linear(hidden_dim, output_dim)
     
     def forward(self, x):
         x = x.view(-1, 28*28)  #  NOTE: specific to MNIST
-        x = F.relu(self.input(x))
-        x = self.output(x)
-        return x
+        x = self.hidden(x)
+        y = self.classifier(x)
+        return y
 
 
 # Main training loop MNIST
@@ -37,31 +53,37 @@ if __name__ == "__main__":
     # create and parse arguments
     parser = argparse.ArgumentParser(description='Train a perceptron on MNIST with BP end-to-end')
     parser.add_argument('--hidden_dim', type=int, default=2000, help='Number of neurons in hidden layer (default: 2000)')
+    parser.add_argument('--n_hidden_layers', type=int, default=1, help='Number of hidden layers (default: 1)')
+    parser.add_argument('--dropout_p', type=float, default=0, help='Dropout probability (default: 0)')
     parser.add_argument('--epochs', type=int, default=50, help='Number of training epochs (default: 50)')
     parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate (default: 0.001)')
-    parser.add_argument('--batch_size', type=int, default=64, help='Batch size (default: 64)')
+    parser.add_argument('--batch', type=int, default=64, help='Batch size (default: 64)')
     parser.add_argument('--save', action='store_true', help='Save the model')
     args = parser.parse_args()
 
     print(
         f'\nParameters:\n' + 
         f'\nlearning_rule=supervised_BP' +
-        f'\nhidden_dim={args.hidden_dim}\tbatch_size={args.batch_size}' +
-        f'\nepochs={args.epochs}\tlearning_rate={args.learning_rate}'
+        f'\nn_hidden_layers={args.n_hidden_layers}' +
+        f'\ndropout_p={args.dropout_p}\n' +
+        f'\nhidden_dim={args.hidden_dim}' +
+        f'\nepochs={args.epochs}' + 
+        f'\nlr={args.learning_rate}' +
+        f'\nbatch={args.batch}'
     )
 
     # specify device and model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = Baseline(28*28, args.hidden_dim, 10)
+    model = Baseline(28*28, args.hidden_dim, 10, args.n_hidden_layers, args.dropout_p)
     model.to(device)
-    model_name = f'baseline-{args.epochs}_epochs-{args.learning_rate}_lr-{args.batch_size}_batch'
+    model_name = f'baseline-{args.n_hidden_layers}_hidden_layers-{args.dropout_p}_dropout_p-{args.epochs}_epochs-{args.learning_rate}_lr-{args.batch}_batch'
 
     # load train and test data
     trainset = FastMNIST('./data', train=True, download=True)
-    trainloader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True)
+    trainloader = DataLoader(trainset, batch_size=args.batch, shuffle=True)
 
     testset = FastMNIST('./data', train=False, download=True)
-    testloader = DataLoader(testset, batch_size=args.batch_size, shuffle=False)
+    testloader = DataLoader(testset, batch_size=args.batch, shuffle=False)
 
     # define loss and optimizer
     criterion = nn.CrossEntropyLoss()

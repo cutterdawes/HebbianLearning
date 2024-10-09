@@ -90,7 +90,7 @@ class SoftWTA:
     ) -> None:
         self.temp = temp
         self.beta = beta
-
+        
         # initialize time-dependent variables
         self.x_prev = torch.tensor(0)
         self.x_mem = torch.tensor(0)
@@ -102,13 +102,18 @@ class SoftWTA:
         W: torch.Tensor
     ) -> torch.Tensor:
         
-        try:
-            # compute softmaxed activations (anti-Hebbian for losers)
-            winner = torch.argmax(y, -1)
-            wta = F.one_hot(winner, y.shape[-1]).float()
-            wta = 2 * wta - torch.ones_like(wta)
-            y_soft = wta * torch.softmax(self.temp * y, -1)
+        # if beta < 0, then sample beta for each neuron uniformly from [0, beta]
+        if isinstance(self.beta, float) and self.beta < 0:
+            # self.beta = -self.beta * torch.rand(x.shape[-1])
+            self.beta = torch.where(torch.rand(x.shape[-1]) > -self.beta, 0.1, 1.0)
 
+        # compute softmaxed activations (anti-Hebbian for losers)
+        winner = torch.argmax(y, -1)
+        wta = F.one_hot(winner, y.shape[-1]).float()
+        wta = 2 * wta - torch.ones_like(wta)
+        y_soft = wta * torch.softmax(self.temp * y, -1)
+        
+        try:
             # update time-dependent variables
             x_dot = x - self.x_prev
             self.x_prev = x

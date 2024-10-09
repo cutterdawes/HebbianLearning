@@ -103,7 +103,8 @@ if __name__ == "__main__":
     parser.add_argument('--sup_epochs', type=int, default=50, help='Number of supervised epochs (default: 50)')
     parser.add_argument('--unsup_lr', type=float, default=0.001, help='Unsupervised learning rate (default: 0.001)')
     parser.add_argument('--sup_lr', type=float, default=0.001, help='Supervised learning rate (default: 0.001)')
-    parser.add_argument('--batch_size', type=int, default=64, help='Batch size (default: 64)')
+    parser.add_argument('--unsup_batch', type=int, default=64, help='Unsupervised batch size (default: 64)')
+    parser.add_argument('--sup_batch', type=int, default=64, help='Supervised batch size (default: 64)')
     parser.add_argument('--save', action='store_true', help='Save model')
     args = parser.parse_args()
 
@@ -123,9 +124,10 @@ if __name__ == "__main__":
         f'\nlearning_rule={args.learning_rule}' +
         f'\nlearning_params={args.learning_params}' +
         f'\nn_hebbian_layers={args.n_hebbian_layers}\n' +
-        f'\nhidden_dim={args.hidden_dim}\tbatch_size={args.batch_size}' +
+        f'\nhidden_dim={args.hidden_dim}' +
         f'\nunsup_epochs={args.unsup_epochs}\tsup_epochs={args.sup_epochs}' +
-        f'\nunsup_lr={args.unsup_lr}\tsup_lr={args.sup_lr}'
+        f'\nunsup_lr={args.unsup_lr}\tsup_lr={args.sup_lr}' +
+        f'\nunsup_batch={args.unsup_batch}\tsup_batch={args.sup_batch}'
     )
 
     # specify device and model
@@ -133,18 +135,19 @@ if __name__ == "__main__":
     model = GenHebb(28*28, args.hidden_dim, 10, args.learning_rule, args.n_hebbian_layers, **kwargs)
     model.to(device)
     model_name = (
-        f'genhebb-{args.learning_rule}-{args.learning_params}-{args.n_hebbian_layers}_hebbian_layers'
-        f'-{args.hidden_dim}_hidden_dim-{args.batch_size}_batch'
+        f'genhebb-{args.learning_rule}-{args.learning_params}'
+        f'-{args.n_hebbian_layers}_hebbian_layers-{args.hidden_dim}_hidden_dim'
         f'-{args.unsup_epochs}_unsup_epochs-{args.sup_epochs}_sup_epochs'
         f'-{args.unsup_lr}_unsup_lr-{args.sup_lr}_sup_lr'
+        f'-{args.unsup_batch}_unsup_batch-{args.sup_batch}_sup_batch'
     )
 
     # load train and test data
     trainset = FastMNIST('./data', train=True, download=True, device=device)
-    trainloader = DataLoader(trainset, batch_size=args.batch_size, shuffle=True)
-
+    unsup_trainloader = DataLoader(trainset, batch_size=args.unsup_batch, shuffle=True)
+    sup_trainloader = DataLoader(trainset, batch_size=args.sup_batch, shuffle=True)
     testset = FastMNIST('./data', train=False, download=True, device=device)
-    testloader = DataLoader(testset, batch_size=args.batch_size, shuffle=False)
+    testloader = DataLoader(testset, batch_size=args.sup_batch, shuffle=False)
 
     # define loss, optimizers, and LR schedulers
     criterion = nn.CrossEntropyLoss()
@@ -155,7 +158,7 @@ if __name__ == "__main__":
     # unsupervised training with Hebbian learning rule
     print('\n\nTraining Hebbian embedding...\n')
     for epoch in range(args.unsup_epochs):
-        for inputs, _ in trainloader:
+        for inputs, _ in unsup_trainloader:
             inputs = inputs.to(device)
 
             # zero the parameter gradients
@@ -172,9 +175,6 @@ if __name__ == "__main__":
         norms = [int(torch.norm(model.hebb[i].W)) for i in range(model.n_hebbian_layers)]
         norms = ', '.join(map(str, norms))
         print(f'Epoch [{epoch+1}/{args.unsup_epochs}]\t|W|_F: {norms}')
-        # if args.save:
-        #     path = f'saved_models/mid-training/{model_name}-epoch_{epoch+1}.pt'
-        #     torch.save(model.state_dict(), path)  # NOTE: not saving mid-training
 
     unsup_optimizer.zero_grad()
     model.hebb.requires_grad = False
@@ -187,7 +187,7 @@ if __name__ == "__main__":
         running_loss = 0.0
         correct = 0
         total = 0
-        for inputs, labels in trainloader:
+        for inputs, labels in sup_trainloader:
             inputs = inputs.to(device)
             labels = labels.to(device)
 
@@ -210,7 +210,7 @@ if __name__ == "__main__":
         # evaluation on test set
         if epoch % 10 == 0 or epoch == 49:
             print(f'Epoch [{epoch+1}/{args.sup_epochs}]')
-            print(f'train loss: {running_loss / len(trainloader):.3f} \t train accuracy: {100 * correct / total:.1f} %')
+            print(f'train loss: {running_loss / len(sup_trainloader):.3f} \t train accuracy: {100 * correct / total:.1f} %')
 
             # on the test set
             model.eval()
@@ -231,7 +231,7 @@ if __name__ == "__main__":
                     correct += (predicted == labels).sum().item()
                     loss = criterion(outputs, labels)
                     running_loss += loss.item()
-            print(f'test loss: {running_loss / len(trainloader):.3f} \t test accuracy: {100 * correct / total:.1f} % \n')
+            print(f'test loss: {running_loss / len(testloader):.3f} \t test accuracy: {100 * correct / total:.1f} % \n')
 
     # save model if specified
     if args.save:
