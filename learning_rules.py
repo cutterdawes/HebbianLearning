@@ -105,7 +105,7 @@ class SoftWTA:
         # if beta < 0, then sample beta for each neuron uniformly from [0, beta]
         if isinstance(self.beta, float) and self.beta < 0:
             # self.beta = -self.beta * torch.rand(x.shape[-1])
-            self.beta = torch.where(torch.rand(x.shape[-1]) > -self.beta, 0.1, 1.0)
+            self.beta = torch.where(torch.rand(x.shape[-1]) > -self.beta, 0.1, 0.9)
 
         # compute softmaxed activations (anti-Hebbian for losers)
         winner = torch.argmax(y, -1)
