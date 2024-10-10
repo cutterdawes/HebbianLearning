@@ -131,7 +131,7 @@ class SoftWTA:
 class STDP:
     def __init__(
             self,
-            beta = 0.2
+            beta: float = 1.0
     ) -> None:
         self.beta = beta
 
