@@ -131,14 +131,11 @@ class SoftWTA:
 class STDP:
     def __init__(
             self,
-            beta0 = 0.1,
-            beta1 = 1,
             beta = 0.2
     ) -> None:
-        self.beta0 = beta0
-        self.beta1 = beta1
         self.beta = beta
 
+        # initialize time-dependent variables
         self.x_prev = torch.tensor(0)
         self.x_mem = torch.tensor(0)
 
@@ -149,10 +146,8 @@ class STDP:
             W: torch.Tensor
     ) -> torch.Tensor:
         
-        if isinstance(self.beta0, float):
-            # sample beta0, beta1 for each neuron uniformly from [0, beta0], [0, beta1]
-            self.beta0 = self.beta0 * torch.rand(x.shape[-1])
-            self.beta1 = self.beta1 * torch.rand(x.shape[-1])
+        if isinstance(self.beta, float):
+            # sample beta for each neuron uniformly from [0, beta]
             self.beta = self.beta * torch.rand(x.shape[-1])
 
         try:
@@ -164,7 +159,6 @@ class STDP:
             return torch.zeros_like(W)
         
         # compute STDP rule
-        # x_tot = self.beta0 * x + self.beta1 * x_dot
         Wx = torch.matmul(self.x_mem, W.T)
         dW = y.unsqueeze(-1) * (self.x_mem.unsqueeze(-2) - Wx.unsqueeze(-1) * W.unsqueeze(0))
 

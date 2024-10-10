@@ -154,12 +154,13 @@ if __name__ == "__main__":
 
     # unsup_optimizer = optim.Adam(model.hebb.parameters(), lr=args.unsup_lr)
     unsup_optimizer = optim.Adam([
-        {'params': model.hebb[i].parameters(), 'lr': 10**-(4+i)}  # learning rate for i-th Hebbian layer
+        {'params': model.hebb[i].parameters(), 'lr': args.unsup_lr / 10**i}  # learning rate for i-th Hebbian layer
         for i in range(model.n_hebbian_layers)
     ])
     sup_optimizer = optim.Adam(model.classifier.parameters(), lr=args.sup_lr)
 
-    scheduler = optim.lr_scheduler.ExponentialLR(unsup_optimizer, gamma=0.3)  # NOTE: exponential decaying lr
+    # scheduler = optim.lr_scheduler.ExponentialLR(unsup_optimizer, gamma=0.2)  # NOTE: exponential decaying lr
+    schedulers = [optim.lr_scheduler.StepLR(unsup_optimizer, step_size=5, gamma=0.1)]
 
     # unsupervised training with Hebbian learning rule
     print('\n\nTraining Hebbian embedding...\n')
@@ -177,7 +178,7 @@ if __name__ == "__main__":
             # optimize
             unsup_optimizer.step()
 
-        scheduler.step()
+        # scheduler.step()
 
         # compute Hebbian embedding statistics
         norms = [int(torch.norm(model.hebb[i].W)) for i in range(model.n_hebbian_layers)]
