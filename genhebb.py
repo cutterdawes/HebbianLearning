@@ -28,7 +28,7 @@ class HebbianLayer(nn.Module):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.W = nn.Parameter(torch.randn(output_dim, input_dim))
-        self.a = nn.Tanh()  # NOTE: experiment w/ ReLU, tanh, softmax
+        self.a = nn.ReLU()  # NOTE: experiment w/ ReLU, tanh, softmax
         self.learning_rule = LearningRule(learning_rule, **kwargs)
         
         # optionally normalize W
@@ -95,7 +95,7 @@ class GenHebb(nn.Module):
 if __name__ == "__main__":
     # create and parse arguments
     parser = argparse.ArgumentParser(description='Train a perceptron on MNIST using specified Hebbian learning rule')
-    parser.add_argument('--learning_rule', type=str, choices=['hebbs_rule', 'ojas_rule', 'hard_WTA', 'soft_WTA', 'random_W'], help='Choose competitive WTA rule')
+    parser.add_argument('--learning_rule', type=str, choices=['hebbs_rule', 'ojas_rule', 'hard_WTA', 'soft_WTA', 'STDP', 'random_W'], help='Choose competitive WTA rule')
     parser.add_argument('--learning_params', default='none', help='Choose optional parameters for Hebbian learning rule (default: none)')
     parser.add_argument('--n_hebbian_layers', type=int, default=1, help='Number of unsupervised Hebbian layers (default: 1)')
     parser.add_argument('--hidden_dim', type=int, default=2000, help='Number of neurons in hidden layer (default: 2000)')
@@ -115,7 +115,7 @@ if __name__ == "__main__":
             k, val = arg.split('=')
             if k in ['N_hebb', 'N_anti', 'K_anti']:  # NOTE: not working currently
                 kwargs[k] = int(val)
-            elif k == 'delta' or k == 'temp' or k == 'beta':
+            elif k == 'delta' or k == 'temp' or k == 'beta' or k == 'beta0' or k == 'beta1':
                 kwargs[k] = float(val)
             args.learning_params = '_'.join([f'{k}={val}' for k, val in kwargs.items()])
     
@@ -152,8 +152,14 @@ if __name__ == "__main__":
     # define loss, optimizers, and LR schedulers
     criterion = nn.CrossEntropyLoss()
 
-    unsup_optimizer = optim.Adam(model.hebb.parameters(), lr=args.unsup_lr)
+    # unsup_optimizer = optim.Adam(model.hebb.parameters(), lr=args.unsup_lr)
+    unsup_optimizer = optim.Adam([
+        {'params': model.hebb[i].parameters(), 'lr': 10**-(4+i)}  # learning rate for i-th Hebbian layer
+        for i in range(model.n_hebbian_layers)
+    ])
     sup_optimizer = optim.Adam(model.classifier.parameters(), lr=args.sup_lr)
+
+    scheduler = optim.lr_scheduler.ExponentialLR(unsup_optimizer, gamma=0.3)  # NOTE: exponential decaying lr
 
     # unsupervised training with Hebbian learning rule
     print('\n\nTraining Hebbian embedding...\n')
@@ -170,6 +176,8 @@ if __name__ == "__main__":
 
             # optimize
             unsup_optimizer.step()
+
+        scheduler.step()
 
         # compute Hebbian embedding statistics
         norms = [int(torch.norm(model.hebb[i].W)) for i in range(model.n_hebbian_layers)]
@@ -202,13 +210,13 @@ if __name__ == "__main__":
 
             # compute training statistics
             running_loss += loss.item()
-            if epoch % 10 == 0 or epoch == 49:
+            if epoch == 0 or epoch % 10 == 9 or epoch == args.sup_epochs - 1:
                 total += labels.size(0)
                 _, predicted = torch.max(outputs.data, 1)
                 correct += (predicted == labels).sum().item()
 
         # evaluation on test set
-        if epoch % 10 == 0 or epoch == 49:
+        if epoch == 0 or epoch % 10 == 9 or epoch == args.sup_epochs - 1:
             print(f'Epoch [{epoch+1}/{args.sup_epochs}]')
             print(f'train loss: {running_loss / len(sup_trainloader):.3f} \t train accuracy: {100 * correct / total:.1f} %')
 

@@ -92,8 +92,8 @@ class SoftWTA:
         self.beta = beta
         
         # initialize time-dependent variables
-        self.x_prev = torch.tensor(0)
-        self.x_mem = torch.tensor(0)
+        self.y_prev = torch.tensor(0)
+        self.y_mem = torch.tensor(0)
 
     def __call__(
         self,
@@ -107,26 +107,69 @@ class SoftWTA:
             # self.beta = -self.beta * torch.rand(x.shape[-1])
             self.beta = torch.where(torch.rand(x.shape[-1]) > -self.beta, 0.1, 0.9)
 
-        # compute softmaxed activations (anti-Hebbian for losers)
-        winner = torch.argmax(y, -1)
-        wta = F.one_hot(winner, y.shape[-1]).float()
-        wta = 2 * wta - torch.ones_like(wta)
-        y_soft = wta * torch.softmax(self.temp * y, -1)
-        
         try:
             # update time-dependent variables
+            y_dot = y - self.y_prev
+            self.y_prev = y
+            self.y_mem = y_dot + self.beta * self.y_mem
+        except:  # handles "leftovers" of batch
+            return torch.zeros_like(W)
+
+        # compute softmaxed activations (anti-Hebbian for losers)
+        winner = torch.argmax(self.y_mem, -1)
+        wta = F.one_hot(winner, y.shape[-1]).float()
+        wta = 2 * wta - torch.ones_like(wta)
+        y_soft = wta * torch.softmax(self.temp * self.y_mem, -1)
+        
+        # compute SoftHebb update
+        Wx = torch.matmul(x, W.T)
+        dW = y_soft.unsqueeze(-1) * (x.unsqueeze(-2) - Wx.unsqueeze(-1) * W.unsqueeze(0))
+    
+        return dW
+    
+
+class STDP:
+    def __init__(
+            self,
+            beta0 = 0.1,
+            beta1 = 1,
+            beta = 0.2
+    ) -> None:
+        self.beta0 = beta0
+        self.beta1 = beta1
+        self.beta = beta
+
+        self.x_prev = torch.tensor(0)
+        self.x_mem = torch.tensor(0)
+
+    def __call__(
+            self,
+            x: torch.Tensor,
+            y: torch.Tensor,
+            W: torch.Tensor
+    ) -> torch.Tensor:
+        
+        if isinstance(self.beta0, float):
+            # sample beta0, beta1 for each neuron uniformly from [0, beta0], [0, beta1]
+            self.beta0 = self.beta0 * torch.rand(x.shape[-1])
+            self.beta1 = self.beta1 * torch.rand(x.shape[-1])
+            self.beta = self.beta * torch.rand(x.shape[-1])
+
+        try:
+            # update time dependent variables
             x_dot = x - self.x_prev
             self.x_prev = x
             self.x_mem = x_dot + self.beta * self.x_mem
-
-            # compute SoftHebb update
-            Wx = torch.matmul(self.x_mem, W.T)
-            dW = y_soft.unsqueeze(-1) * (self.x_mem.unsqueeze(-2) - Wx.unsqueeze(-1) * W.unsqueeze(0))
         except:  # handles "leftovers" of batch
-            dW = torch.zeros_like(W)
+            return torch.zeros_like(W)
+        
+        # compute STDP rule
+        # x_tot = self.beta0 * x + self.beta1 * x_dot
+        Wx = torch.matmul(self.x_mem, W.T)
+        dW = y.unsqueeze(-1) * (self.x_mem.unsqueeze(-2) - Wx.unsqueeze(-1) * W.unsqueeze(0))
 
         return dW
-    
+
 
 class RandomW:
     def __call__(
@@ -150,6 +193,7 @@ class LearningRule:
             'ojas_rule': OjasRule,
             'hard_WTA': HardWTA,
             'soft_WTA': SoftWTA,
+            'STDP': STDP,
             'random_W': RandomW
         }
         if rule not in rules.keys():
