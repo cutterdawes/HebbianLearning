@@ -1,0 +1,26 @@
+model:
+  type: GenHebb
+  input_dim: 784
+  hidden_dim: 100
+  output_dim: 10
+  learning_rule: STDP
+  n_hebbian_layers: 1
+  kwargs:
+    beta: 0.1
+# model:
+#   type: Baseline
+#   input_dim: 784
+#   hidden_dim: 100
+#   output_dim: 10
+#   n_hidden_layers: 1
+#   dropout_p: 0.1
+
+unsup_training:
+  epochs: 5
+  lr: 0.0001
+  batch_size: 64
+
+sup_training:
+  epochs: 20
+  lr: 0.001
+  batch_size: 64

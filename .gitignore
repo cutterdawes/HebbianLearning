@@ -1,7 +1,9 @@
 data/
-saved_models/
+model/saved/
 job_outputs/
+logs/
 figures/
+softhebb/
 .DS_Store
 .ipynb_checkpoints/
 __pycache__/
