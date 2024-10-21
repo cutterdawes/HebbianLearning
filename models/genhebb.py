@@ -25,7 +25,7 @@ class HebbianLayer(nn.Module):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.W = nn.Parameter(torch.randn(output_dim, input_dim))
-        self.a = nn.ReLU()  # NOTE: experiment w/ ReLU, tanh, softmax
+        self.a = nn.Tanh()  # NOTE: experiment w/ ReLU, tanh, softmax
         self.learning_rule = LearningRule(learning_rule, **kwargs)
         
         # optionally normalize W

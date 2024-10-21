@@ -10,11 +10,6 @@ from models.baseline import Baseline
 from dataset import FastMNIST
 
 
-def load_config(config_file):
-    with open(config_file, 'r') as file:
-        return yaml.safe_load(file)
-    
-
 def setup_logging(log_file='train.log'):
     # create a logs directory if it doesn't exist
     if not os.path.exists('logs'):
@@ -22,12 +17,17 @@ def setup_logging(log_file='train.log'):
 
     logging.basicConfig(
         level=logging.INFO,
-        format='%(asctime)s - %(levelname)s - %(message)s',
+        format='%(message)s',
         handlers=[
             logging.FileHandler(os.path.join('logs', log_file)),
             logging.StreamHandler()  # Logs to console as well
         ]
     )
+
+
+def load_config(config_file):
+    with open(config_file, 'r') as file:
+        return yaml.safe_load(file)
 
 
 def get_device():

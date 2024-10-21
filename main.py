@@ -1,10 +1,11 @@
 import argparse
 import logging
+import yaml
 
 import torch
 
 import training
-from utils import load_config, setup_logging, get_device, get_model, load_data
+from utils import setup_logging, load_config, log_config, get_device, get_model, load_data
 
 
 # Main training loop MNIST
@@ -16,17 +17,19 @@ if __name__ == "__main__":
     parser.add_argument('--save', action='store_true', help='Save model')
     args = parser.parse_args()
 
+    # setup logging
+    setup_logging()
+
     # load config
     config = load_config(args.config)
 
-    # setup logging
-    setup_logging()
 
     # get device
     device = get_device()
 
     # load model
     model = get_model(config)
+    logging.info('\nparameters...\n\n' + yaml.dump(config, default_flow_style=False))
 
     # unsupervised training (if using a Hebbian learning rule)
     if config['model']['type'] == 'GenHebb':

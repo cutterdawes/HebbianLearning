@@ -4,7 +4,8 @@ model:
   hidden_dim: 100
   output_dim: 10
   learning_rule: STDP
-  n_hebbian_layers: 1
+  # activation: ReLU
+  n_hebbian_layers: 2
   kwargs:
     beta: 0.1
 # model:
@@ -17,7 +18,7 @@ model:
 
 unsup_training:
   epochs: 5
-  lr: 0.0001
+  lr: 0.00005
   batch_size: 64
 
 sup_training:

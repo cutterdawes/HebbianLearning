@@ -8,6 +8,9 @@ import logging
 def unsupervised(model, trainloader, epochs, lr, device):
     '''Unsupervised training with Hebbian learning rule'''
 
+    # log start of training
+    logging.info('\nunsupervised training...\n')
+
     # Prepare model
     model.to(device)
     model.hebb.train()
@@ -18,6 +21,7 @@ def unsupervised(model, trainloader, epochs, lr, device):
         {'params': model.hebb[i].parameters(), 'lr': lr / 2**i}  # learning rate for i-th Hebbian layer
         for i in range(model.n_hebbian_layers)
     ])
+
     # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.2)  # NOTE: exponential decaying lr
     # lr_lambda = lambda epoch: (-0.99 * lr / epochs) * epoch + lr
     # scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
@@ -42,9 +46,8 @@ def unsupervised(model, trainloader, epochs, lr, device):
         # compute Hebbian embedding statistics
         norms = [int(torch.norm(model.hebb[i].W)) for i in range(model.n_hebbian_layers)]
         norms = ', '.join(map(str, norms))
-        msg = f'Epoch [{epoch+1}/{epochs}]\t|W|_F: {norms}'
-        print(msg)
-        # logging.info(msg)
+        msg = f'epoch [{epoch+1}/{epochs}]\t|W|_F: {norms}'
+        logging.info(msg)
 
     optimizer.zero_grad()
     model.hebb.requires_grad = False
@@ -53,6 +56,9 @@ def unsupervised(model, trainloader, epochs, lr, device):
 
 def supervised(model, trainloader, testloader, epochs, lr, device):
     '''supervised training of classifier'''
+
+    # log start of training
+    logging.info('\n\nsupervised training...\n')
 
     # Prepare model
     model.to(device)
@@ -95,11 +101,10 @@ def supervised(model, trainloader, testloader, epochs, lr, device):
         # evaluation on test set
         if epoch == 0 or epoch % 10 == 9 or epoch == epochs - 1:
             msg = (
-                f'Epoch [{epoch+1}/{epochs}]\n' +
+                f'epoch [{epoch+1}/{epochs}]\n' +
                 f'train loss: {running_loss / len(trainloader):.3f} \t train accuracy: {100 * correct / total:.1f} %'
             )
-            print(msg)
-            # logging.info(msg)
+            logging.info(msg)
 
             # on the test set
             model.eval()
@@ -121,5 +126,4 @@ def supervised(model, trainloader, testloader, epochs, lr, device):
                     loss = criterion(outputs, labels)
                     running_loss += loss.item()
             msg = f'test loss: {running_loss / len(testloader):.3f} \t test accuracy: {100 * correct / total:.1f} % \n'
-            print(msg)
-            # logging.info(msg)
+            logging.info(msg)

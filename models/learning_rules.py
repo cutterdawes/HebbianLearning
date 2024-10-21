@@ -7,10 +7,10 @@ import torch.nn.functional as F
 
 class HebbsRule:
     def __call__(
-        self,
-        x: torch.Tensor,
-        y: torch.Tensor,
-        W: torch.Tensor
+            self,
+            x: torch.Tensor,
+            y: torch.Tensor,
+            W: torch.Tensor
     ) -> torch.Tensor:
         dW = y.unsqueeze(-1) * x.unsqueeze(-2)  # dW = y x^T
         return dW
@@ -18,10 +18,10 @@ class HebbsRule:
 
 class OjasRule:
     def __call__(
-        self,
-        x: torch.Tensor,
-        y: torch.Tensor,
-        W: torch.Tensor
+            self,
+            x: torch.Tensor,
+            y: torch.Tensor,
+            W: torch.Tensor
     ) -> torch.Tensor:
         Wx = torch.matmul(x, W.T)
         dW = y.unsqueeze(-1) * (x.unsqueeze(-2) - Wx.unsqueeze(-1) * W.unsqueeze(0))  # dW_ij = y_i (x_j - (Wx)_i W_ij)
@@ -44,10 +44,10 @@ class HardWTA:
         self.delta = delta
 
     def __call__(
-        self,
-        x: torch.Tensor,
-        y: torch.Tensor,
-        W: torch.Tensor
+            self,
+            x: torch.Tensor,
+            y: torch.Tensor,
+            W: torch.Tensor
     ) -> torch.Tensor:
         
         # compute Hebb's rule and first-order normalization
@@ -96,10 +96,10 @@ class SoftWTA:
         self.y_mem = torch.tensor(0)
 
     def __call__(
-        self,
-        x: torch.Tensor,
-        y: torch.Tensor,
-        W: torch.Tensor
+            self,
+            x: torch.Tensor,
+            y: torch.Tensor,
+            W: torch.Tensor
     ) -> torch.Tensor:
         
         # if beta < 0, then sample beta for each neuron uniformly from [0, beta]
@@ -169,10 +169,10 @@ class STDP:
 
 class RandomW:
     def __call__(
-        self,
-        x: torch.Tensor,
-        y: torch.Tensor,
-        W: torch.Tensor
+            self,
+            x: torch.Tensor,
+            y: torch.Tensor,
+            W: torch.Tensor
     ) -> torch.Tensor:
         dW = torch.zeros_like(W)
         return dW
@@ -180,9 +180,9 @@ class RandomW:
 
 class LearningRule:
     def __init__(
-        self,
-        rule: str,
-        **kwargs
+            self,
+            rule: str,
+            **kwargs
     ) -> None:
         rules = {
             'hebbs_rule': HebbsRule,
@@ -197,10 +197,10 @@ class LearningRule:
         self.rule = rules[rule](**kwargs)
 
     def __call__(
-        self,
-        x: torch.Tensor,
-        y: torch.Tensor,
-        W: torch.Tensor
+            self,
+            x: torch.Tensor,
+            y: torch.Tensor,
+            W: torch.Tensor
     ) -> torch.Tensor:
         
         # compute specified learning rule
