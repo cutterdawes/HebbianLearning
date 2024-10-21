@@ -1,0 +1,12 @@
+model:
+  type: Baseline
+  input_dim: 784
+  hidden_dim: 100
+  output_dim: 10
+  n_hidden_layers: 1
+  dropout_p: 0.1
+training:
+  supervised:
+    epochs: 20
+    lr: 0.001
+    batch_size: 64

@@ -5,6 +5,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from models.learning_rules import LearningRule
+from models.activations import Activation
 
 
 class HebbianLayer(nn.Module):
@@ -12,7 +13,8 @@ class HebbianLayer(nn.Module):
             self,
             input_dim: int,
             output_dim: int,
-            learning_rule: LearningRule,
+            learning_rule: str,
+            activation: str,  # NOTE: experiment w/ ReLU, tanh, softmax
             normalized: bool = True,  # NOTE: add to script args?
             **kwargs  # optional learning rule parameters
     ) -> None:
@@ -25,14 +27,15 @@ class HebbianLayer(nn.Module):
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.W = nn.Parameter(torch.randn(output_dim, input_dim))
-        self.a = nn.Tanh()  # NOTE: experiment w/ ReLU, tanh, softmax
+        self.a = Activation(activation)
         self.learning_rule = LearningRule(learning_rule, **kwargs)
         
         # optionally normalize W
         self.normalized = normalized
         if self.normalized:
             self.W.data = F.normalize(self.W.data)
-
+        
+        
     def forward(self, x):
         # standard forward pass
         y = self.a(torch.matmul(x, self.W.T))
@@ -52,6 +55,7 @@ class GenHebb(nn.Module):
             hidden_dim: int,
             output_dim: int,
             learning_rule: str,
+            activation: str = 'relu',
             n_hebbian_layers: int = 1,
             **kwargs  # optional learning rule parameters
     ) -> None:
@@ -65,15 +69,16 @@ class GenHebb(nn.Module):
         self.hidden_dim = hidden_dim
         self.output_dim = output_dim
         self.learning_rule = LearningRule(learning_rule, **kwargs)
+        self.activation = Activation(activation)
         self.n_hebbian_layers = n_hebbian_layers
         
         # stack unsupervised Hebbian layers
         layers = []
         for i in range(n_hebbian_layers):
             if i == 0:
-                layers.append(HebbianLayer(input_dim, hidden_dim, learning_rule, **kwargs))
+                layers.append(HebbianLayer(input_dim, hidden_dim, learning_rule, activation, **kwargs))
             else:
-                layers.append(HebbianLayer(hidden_dim, hidden_dim, learning_rule, **kwargs))
+                layers.append(HebbianLayer(hidden_dim, hidden_dim, learning_rule, activation, **kwargs))
         self.hebb = nn.Sequential(*layers)
 
         # add classifier layer

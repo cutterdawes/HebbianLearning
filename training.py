@@ -1,8 +1,9 @@
+import logging
+
 import torch
 from torch import nn, optim
-from models.baseline import Baseline
 
-import logging
+from models.baseline import Baseline
 
 
 def unsupervised(model, trainloader, epochs, lr, device):
@@ -52,13 +53,14 @@ def unsupervised(model, trainloader, epochs, lr, device):
     optimizer.zero_grad()
     model.hebb.requires_grad = False
     model.hebb.eval()
+    logging.info('')
 
 
 def supervised(model, trainloader, testloader, epochs, lr, device):
     '''supervised training of classifier'''
 
     # log start of training
-    logging.info('\n\nsupervised training...\n')
+    logging.info('\nsupervised training...\n')
 
     # Prepare model
     model.to(device)

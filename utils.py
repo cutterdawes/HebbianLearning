@@ -1,6 +1,7 @@
 import yaml
 import logging
 import os
+import argparse
 
 import torch
 from torch.utils.data import DataLoader
@@ -25,48 +26,73 @@ def setup_logging(log_file='train.log'):
     )
 
 
-def load_config(config_file):
+def parse_args():
+    parser = argparse.ArgumentParser(description='Train a fully-connected model on MNIST using specified Hebbian learning rule or BP (baseline)')
+    parser.add_argument('--config', type=str, required=True, help='Path to config file')
+    parser.add_argument('--save', action='store_true', help='Save model')
+    args = parser.parse_args()
+    return args
+
+
+def load_config(config):
+    config_file = f'configs/{config}.yml'
     with open(config_file, 'r') as file:
-        return yaml.safe_load(file)
+        config = yaml.safe_load(file)
+    logging.info(f'\nparameters...\n\n' + yaml.dump(config, sort_keys=False, default_flow_style=False))
+    return config
+
+
+# def modify_config(config, args):
+#     for param in args.params:
+#         if 
+#     return config
 
 
 def get_device():
     return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def get_model(config):
-    if config['model']['type'] == 'GenHebb':
+def get_model(model_config):
+    if model_config['type'] == 'GenHebb':
         return GenHebb(
-            input_dim=config['model']['input_dim'],
-            hidden_dim=config['model']['hidden_dim'],
-            output_dim=config['model']['output_dim'],
-            learning_rule=config['model']['learning_rule'],
-            n_hebbian_layers=config['model']['n_hebbian_layers'],
-            **config['model']['kwargs']
+            input_dim=model_config['input_dim'],
+            hidden_dim=model_config['hidden_dim'],
+            output_dim=model_config['output_dim'],
+            learning_rule=model_config['learning_rule'],
+            activation=model_config['activation'],
+            n_hebbian_layers=model_config['n_hebbian_layers'],
+            **model_config['kwargs']
         )
-    elif config['model']['type'] == 'Baseline':
+    elif model_config['type'] == 'Baseline':
         return Baseline(
-            input_dim=config['model']['input_dim'],
-            hidden_dim=config['model']['hidden_dim'],
-            output_dim=config['model']['output_dim'],
-            n_hidden_layers=config['model']['n_hidden_layers'],
-            dropout_p=config['model']['dropout_p']
+            input_dim=model_config['input_dim'],
+            hidden_dim=model_config['hidden_dim'],
+            output_dim=model_config['output_dim'],
+            n_hidden_layers=model_config['n_hidden_layers'],
+            dropout_p=model_config['dropout_p']
         )
     else:
-        raise ValueError(f"Unknown model type: {config['model']['type']}")
+        raise ValueError(f"Unknown model type: {model_config['type']}")
     
 
-def load_data(config, train_type, device):
+def load_data(training_config, type, device):
     # load train and test data
     trainset = FastMNIST('./data', train=True, download=True, device=device)
     testset = FastMNIST('./data', train=False, download=True, device=device)
 
-    trainloader = DataLoader(trainset, batch_size=config[train_type]['batch_size'], shuffle=True)
-    testloader = DataLoader(testset, batch_size=config[train_type]['batch_size'], shuffle=False)
+    trainloader = DataLoader(trainset, batch_size=training_config[type]['batch_size'], shuffle=True)
+    testloader = DataLoader(testset, batch_size=training_config[type]['batch_size'], shuffle=False)
 
-    if train_type == 'unsup_training':
+    if type == 'unsupervised':
         return trainloader
-    elif train_type == 'sup_training':
+    elif type == 'supervised':
         return trainloader, testloader
     else:
-        raise KeyError('Invalid train_type')
+        raise KeyError('Invalid type')
+    
+    
+def save_model(model):
+    model_name = 'temp'
+    path = f'models/saved/done-training/{model_name}.pt'
+    torch.save(model.state_dict(), path)
+    logging.info(f'Model saved to: {path}')

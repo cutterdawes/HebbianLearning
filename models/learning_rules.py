@@ -161,7 +161,6 @@ class STDP:
         # compute STDP rule
         Wx = torch.matmul(self.x_mem, W.T)
         dW = y.unsqueeze(-1) * (self.x_mem.unsqueeze(-2) - Wx.unsqueeze(-1) * W.unsqueeze(0))
-        # import pdb; pdb.set_trace()
         dW += 0.3 * (y.max() - y).unsqueeze(-1) * torch.randn_like(W)
 
         return dW
