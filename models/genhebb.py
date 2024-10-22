@@ -92,8 +92,9 @@ class GenHebb(nn.Module):
         x = self.hebb(x)
         # linear classifier
         y = self.classifier(x)
-
+ 
         # modulate by relative importance of neuron (if not last Hebbian layer)
+        # TODO: clean up implementation
         if self.importance_factor != 0 and self.training:
             for l in range(self.n_hebbian_layers):
                 if l < self.n_hebbian_layers - 1:

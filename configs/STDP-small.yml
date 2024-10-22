@@ -5,7 +5,7 @@ model:
   output_dim: 10
   learning_rule: STDP
   activation: relu
-  n_hebbian_layers: 3
+  n_hebbian_layers: 1
   importance_factor: 100
   kwargs:
     beta: 0.1
