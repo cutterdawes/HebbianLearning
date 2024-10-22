@@ -1,7 +1,7 @@
 model:
   type: GenHebb
   input_dim: 784
-  hidden_dim: 500
+  hidden_dim: 100
   output_dim: 10
   learning_rule: STDP
   activation: relu
