@@ -15,6 +15,6 @@ training:
     lr: 0.00001
     batch_size: 64
   supervised:
-    epochs: 100
+    epochs: 50
     lr: 0.001
     batch_size: 64
