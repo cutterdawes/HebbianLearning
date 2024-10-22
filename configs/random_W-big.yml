@@ -1,7 +1,7 @@
 model:
   type: GenHebb
   input_dim: 784
-  hidden_dim: 100
+  hidden_dim: 2000
   output_dim: 10
   learning_rule: random_W
   activation: relu
