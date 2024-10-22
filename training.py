@@ -24,10 +24,10 @@ def unsupervised(model, trainloader, epochs, lr, device):
     ])
 
     # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.2)  # NOTE: exponential decaying lr
-    # lr_lambda = lambda epoch: (-0.99 * lr / epochs) * epoch + lr
-    # scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
+    lr_lambda = lambda epoch: (-0.9 / epochs) * epoch + 1
+    scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
 
-    # Unsupervised training loop
+    # unsupervised training loop
     for epoch in range(epochs):
         for inputs, _ in trainloader:
             inputs = inputs.to(device)
@@ -42,7 +42,7 @@ def unsupervised(model, trainloader, epochs, lr, device):
             # optimize
             optimizer.step()
 
-        # scheduler.step()
+        scheduler.step()
 
         # compute Hebbian embedding statistics
         norms = [int(torch.norm(model.hebb[i].W)) for i in range(model.n_hebbian_layers)]
@@ -73,8 +73,10 @@ def supervised(model, trainloader, testloader, epochs, lr, device):
     else:
         optimizer = optim.Adam(model.classifier.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss()
+    lr_lambda = lambda epoch: (-0.9 / epochs) * epoch + 1
+    scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
 
-    # Supervised training loop
+    # supervised training loop
     for epoch in range(epochs):
         model.classifier.train()
         running_loss = 0.0
@@ -129,3 +131,5 @@ def supervised(model, trainloader, testloader, epochs, lr, device):
                     running_loss += loss.item()
             msg = f'test loss: {running_loss / len(testloader):.3f} \t test accuracy: {100 * correct / total:.1f} % \n'
             logging.info(msg)
+        
+        scheduler.step()

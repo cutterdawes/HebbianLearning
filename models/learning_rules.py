@@ -92,8 +92,8 @@ class SoftWTA:
         self.beta = beta  # TODO: revert to time-independent version
         
         # initialize time-dependent variables
-        self.y_prev = torch.tensor(0)
-        self.y_mem = torch.tensor(0)
+        self.x_prev = torch.tensor(0)
+        self.x_mem = torch.tensor(0)
 
     def __call__(
             self,
@@ -102,28 +102,27 @@ class SoftWTA:
             W: torch.Tensor
     ) -> torch.Tensor:
         
-        # if beta < 0, then sample beta for each neuron uniformly from [0, beta]
-        if isinstance(self.beta, float) and self.beta < 0:
-            # self.beta = -self.beta * torch.rand(x.shape[-1])
-            self.beta = torch.where(torch.rand(x.shape[-1]) > -self.beta, 0.1, 0.9)
+        if isinstance(self.beta, float):
+            # sample beta for each neuron uniformly from [0, beta]
+            self.beta = self.beta * torch.rand(x.shape[-1])
 
         try:
-            # update time-dependent variables
-            y_dot = y - self.y_prev
-            self.y_prev = y
-            self.y_mem = y_dot + self.beta * self.y_mem
+            # update time dependent variables
+            x_dot = x - self.x_prev
+            self.x_prev = x
+            self.x_mem = x_dot + self.beta * self.x_mem
         except:  # handles "leftovers" of batch
             return torch.zeros_like(W)
 
         # compute softmaxed activations (anti-Hebbian for losers)
-        winner = torch.argmax(self.y_mem, -1)
+        winner = torch.argmax(y, -1)
         wta = F.one_hot(winner, y.shape[-1]).float()
         wta = 2 * wta - torch.ones_like(wta)
-        y_soft = wta * torch.softmax(self.temp * self.y_mem, -1)
+        y_soft = wta * torch.softmax(self.temp * y, -1)
         
         # compute SoftHebb update
-        Wx = torch.matmul(x, W.T)
-        dW = y_soft.unsqueeze(-1) * (x.unsqueeze(-2) - Wx.unsqueeze(-1) * W.unsqueeze(0))
+        Wx = torch.matmul(self.x_mem, W.T)
+        dW = y_soft.unsqueeze(-1) * (self.x_mem.unsqueeze(-2) - Wx.unsqueeze(-1) * W.unsqueeze(0))
     
         return dW
     
@@ -161,7 +160,7 @@ class STDP:
         # compute STDP rule
         Wx = torch.matmul(self.x_mem, W.T)
         dW = y.unsqueeze(-1) * (self.x_mem.unsqueeze(-2) - Wx.unsqueeze(-1) * W.unsqueeze(0))
-        dW += 0.3 * (y.max() - y).unsqueeze(-1) * torch.randn_like(W)
+        # dW += 0.3 * (y.max() - y).unsqueeze(-1) * torch.randn_like(W)
 
         return dW
 

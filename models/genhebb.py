@@ -74,8 +74,8 @@ class GenHebb(nn.Module):
         
         # stack unsupervised Hebbian layers
         layers = []
-        for i in range(n_hebbian_layers):
-            if i == 0:
+        for l in range(n_hebbian_layers):
+            if l == 0:
                 layers.append(HebbianLayer(input_dim, hidden_dim, learning_rule, activation, **kwargs))
             else:
                 layers.append(HebbianLayer(hidden_dim, hidden_dim, learning_rule, activation, **kwargs))
@@ -90,4 +90,15 @@ class GenHebb(nn.Module):
         x = self.hebb(x)
         # linear classifier
         y = self.classifier(x)
+
+        if self.training:
+            for l in range(self.n_hebbian_layers):
+                dW_l = self.hebb[l].W.grad
+                # modulate by relative importance of neuron (if not last Hebbian layer)
+                if l < self.n_hebbian_layers - 1:
+                    W_nl = self.hebb[2*(l+1)].weight
+                    imp_l = torch.norm(W_nl, dim=0).unsqueeze(-1)
+                    import pdb; pdb.set_trace()
+                    self.hebb[l].W.grad = dW_l / imp_l
+
         return y

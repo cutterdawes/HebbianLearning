@@ -1,0 +1,18 @@
+model:
+  type: GenHebb
+  input_dim: 784
+  hidden_dim: 100
+  output_dim: 10
+  learning_rule: random_W
+  activation: relu
+  n_hebbian_layers: 1
+  kwargs: {}
+training:
+  unsupervised:
+    epochs: 1
+    lr: 0.00001
+    batch_size: 64
+  supervised:
+    epochs: 20
+    lr: 0.001
+    batch_size: 64

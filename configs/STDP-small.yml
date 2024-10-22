@@ -11,9 +11,9 @@ model:
 training:
   unsupervised:
     epochs: 5
-    lr: 0.0001
+    lr: 0.00001
     batch_size: 64
   supervised:
-    epochs: 20
+    epochs: 50
     lr: 0.001
     batch_size: 64
