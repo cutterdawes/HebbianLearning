@@ -61,6 +61,7 @@ def get_model(model_config):
             learning_rule=model_config['learning_rule'],
             activation=model_config['activation'],
             n_hebbian_layers=model_config['n_hebbian_layers'],
+            importance_factor=model_config['importance_factor'],
             **model_config['kwargs']
         )
     elif model_config['type'] == 'Baseline':

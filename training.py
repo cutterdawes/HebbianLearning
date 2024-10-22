@@ -17,15 +17,15 @@ def unsupervised(model, trainloader, epochs, lr, device):
     model.hebb.train()
 
     # define unsupervised optimizer and LR scheduler
-    # optimizer = optim.Adeam(model.hebb.parameters(), lr=lr)
+    # optimizer = optim.Adam(model.hebb.parameters(), lr=lr)
     optimizer = optim.Adam([
         {'params': model.hebb[i].parameters(), 'lr': lr / 2**i}  # learning rate for i-th Hebbian layer
         for i in range(model.n_hebbian_layers)
     ])
 
     # scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.2)  # NOTE: exponential decaying lr
-    lr_lambda = lambda epoch: (-0.9 / epochs) * epoch + 1
-    scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
+    # lr_lambda = lambda epoch: (-0.9 / epochs) * epoch + 1
+    # scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
 
     # unsupervised training loop
     for epoch in range(epochs):
@@ -42,7 +42,7 @@ def unsupervised(model, trainloader, epochs, lr, device):
             # optimize
             optimizer.step()
 
-        scheduler.step()
+        # scheduler.step()
 
         # compute Hebbian embedding statistics
         norms = [int(torch.norm(model.hebb[i].W)) for i in range(model.n_hebbian_layers)]
@@ -72,9 +72,11 @@ def supervised(model, trainloader, testloader, epochs, lr, device):
         optimizer = optim.Adam(model.parameters(), lr=lr)
     else:
         optimizer = optim.Adam(model.classifier.parameters(), lr=lr)
+        
     criterion = nn.CrossEntropyLoss()
-    lr_lambda = lambda epoch: (-0.9 / epochs) * epoch + 1
-    scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
+
+    # lr_lambda = lambda epoch: (-0.9 / epochs) * epoch + 1
+    # scheduler = optim.lr_scheduler.LambdaLR(optimizer, lr_lambda=lr_lambda)
 
     # supervised training loop
     for epoch in range(epochs):
@@ -132,4 +134,4 @@ def supervised(model, trainloader, testloader, epochs, lr, device):
             msg = f'test loss: {running_loss / len(testloader):.3f} \t test accuracy: {100 * correct / total:.1f} % \n'
             logging.info(msg)
         
-        scheduler.step()
+        # scheduler.step()

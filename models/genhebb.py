@@ -57,6 +57,7 @@ class GenHebb(nn.Module):
             learning_rule: str,
             activation: str = 'relu',
             n_hebbian_layers: int = 1,
+            importance_factor: float = 0,
             **kwargs  # optional learning rule parameters
     ) -> None:
         """
@@ -71,6 +72,7 @@ class GenHebb(nn.Module):
         self.learning_rule = LearningRule(learning_rule, **kwargs)
         self.activation = Activation(activation)
         self.n_hebbian_layers = n_hebbian_layers
+        self.importance_factor = importance_factor
         
         # stack unsupervised Hebbian layers
         layers = []
@@ -91,14 +93,12 @@ class GenHebb(nn.Module):
         # linear classifier
         y = self.classifier(x)
 
-        if self.training:
+        # modulate by relative importance of neuron (if not last Hebbian layer)
+        if self.importance_factor != 0 and self.training:
             for l in range(self.n_hebbian_layers):
-                dW_l = self.hebb[l].W.grad
-                # modulate by relative importance of neuron (if not last Hebbian layer)
                 if l < self.n_hebbian_layers - 1:
-                    W_nl = self.hebb[2*(l+1)].weight
+                    W_nl = self.hebb[l+1].W
                     imp_l = torch.norm(W_nl, dim=0).unsqueeze(-1)
-                    import pdb; pdb.set_trace()
-                    self.hebb[l].W.grad = dW_l / imp_l
+                    self.hebb[l].W.grad /= imp_l**self.importance_factor
 
         return y
