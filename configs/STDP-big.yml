@@ -11,7 +11,7 @@ model:
     beta: 0.1
 training:
   unsupervised:
-    epochs: 3
+    epochs: 5
     lr: 0.00001
     batch_size: 128
   supervised:
