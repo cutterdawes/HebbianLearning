@@ -54,7 +54,7 @@ if __name__ == '__main__':
         'importance_factor': [0, 10, 100],
         'beta': [0.1],
         'epochs': [3],
-        'lr': [0.0001, 0.0002, 0.0003],
+        'lr': [0.0003, 0.0004, 0.0005],
     }
     msg = yaml.dump(param_grid, sort_keys=False, default_flow_style=False)
     logging.info(msg)
