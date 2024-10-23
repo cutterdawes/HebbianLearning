@@ -1,0 +1,15 @@
+#!/bin/bash
+#SBATCH --job-name=grid_search              # job name
+#SBATCH --ntasks=1                          # run a single task
+#SBATCH --cpus-per-task=4                   # number of CPU cores per task
+#SBATCH --gres=gpu:1                        # request GPU
+#SBATCH --mem=16G                           # memory pool for all cores
+#SBATCH --time=16:00:00                     # time limit
+#SBATCH --output=job_outputs/output_%j.log  # standard output and error log (%j is the job ID)
+
+# load modules and activate environment
+source ~/.bashrc
+conda activate hebbian
+
+# grid search
+python grid_search.py
