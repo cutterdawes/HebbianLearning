@@ -100,6 +100,9 @@ class GenHebb(nn.Module):
                 if l < self.n_hebbian_layers - 1:
                     W_nl = self.hebb[l+1].W
                     imp_l = torch.norm(W_nl, dim=0).unsqueeze(-1)
-                    self.hebb[l].W.grad /= imp_l**self.importance_factor
+                    # self.hebb[l].W.grad /= imp_l**self.importance_factor
+                    
+                    imp_l = torch.where(imp_l >= 1, imp_l, -imp_l)
+                    self.hebb[l].W.grad *= imp_l
 
         return y

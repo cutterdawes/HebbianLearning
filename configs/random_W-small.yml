@@ -5,7 +5,7 @@ model:
   output_dim: 10
   learning_rule: random_W
   activation: relu
-  n_hebbian_layers: 1
+  n_hebbian_layers: 3
   importance_factor: 0
   kwargs: {}
 training:

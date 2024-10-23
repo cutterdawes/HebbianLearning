@@ -4,7 +4,7 @@ model:
   hidden_dim: 2000
   output_dim: 10
   learning_rule: STDP
-  activation: tanh
+  activation: relu
   n_hebbian_layers: 1
   importance_factor: 0
   kwargs:
