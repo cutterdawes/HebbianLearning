@@ -5,15 +5,15 @@ model:
   output_dim: 10
   learning_rule: random_W
   activation: relu
-  n_hebbian_layers: 1
+  n_hebbian_layers: 2
   importance_factor: 0
   kwargs: {}
 training:
   unsupervised:
     epochs: 1
     lr: 0.00001
-    batch_size: 64
+    batch_size: 128
   supervised:
-    epochs: 100
+    epochs: 50
     lr: 0.001
     batch_size: 64

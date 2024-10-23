@@ -13,3 +13,4 @@ conda activate hebbian
 
 # train model
 python run.py --config STDP-big
+python run.py --config random_W-big
