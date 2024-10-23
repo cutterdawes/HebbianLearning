@@ -4,15 +4,15 @@ model:
   hidden_dim: 2000
   output_dim: 10
   learning_rule: STDP
-  activation: relu
-  n_hebbian_layers: 2
-  importance_factor: 10
+  activation: tanh
+  n_hebbian_layers: 1
+  importance_factor: 0
   kwargs:
     beta: 0.1
 training:
   unsupervised:
-    epochs: 5
-    lr: 0.00001
+    epochs: 3
+    lr: 0.0004
     batch_size: 128
   supervised:
     epochs: 100

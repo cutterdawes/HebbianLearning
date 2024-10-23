@@ -5,14 +5,14 @@ model:
   output_dim: 10
   learning_rule: STDP
   activation: tanh
-  n_hebbian_layers: 1
-  importance_factor: 0
+  n_hebbian_layers: 2
+  importance_factor: 10
   kwargs:
     beta: 0.1
 training:
   unsupervised:
-    epochs: 3
-    lr: 0.0003
+    epochs: 10
+    lr: 0.0001
     batch_size: 128
   supervised:
     epochs: 50
