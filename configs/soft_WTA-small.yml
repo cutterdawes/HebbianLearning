@@ -4,16 +4,18 @@ model:
   hidden_dim: 100
   output_dim: 10
   learning_rule: soft_WTA
-  activation: relu
-  n_hebbian_layers: 2
+  activation: none
+  n_hebbian_layers: 1
+  importance_factor: 0
   kwargs:
-    beta: 1
+    temp: 7
+    beta: 0.1
 training:
   unsupervised:
-    epochs: 5
-    lr: 0.0001
-    batch_size: 64
+    epochs: 10
+    lr: 0.03
+    batch_size: 128
   supervised:
-    epochs: 20
+    epochs: 50
     lr: 0.001
     batch_size: 64

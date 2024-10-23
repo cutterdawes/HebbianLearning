@@ -11,18 +11,21 @@ from models.baseline import Baseline
 from dataset import FastMNIST
 
 
-def setup_logging(log_file='train.log'):
+def setup_logging(log_file='train.log', verbose=True):
     # create a logs directory if it doesn't exist
     if not os.path.exists('logs'):
         os.makedirs('logs')
 
+    # set up handlers (if verbose, log to console)
+    handlers = [logging.FileHandler(os.path.join('logs', log_file))]
+    if verbose:
+        handlers.append(logging.StreamHandler())
+
+    # configure log
     logging.basicConfig(
         level=logging.INFO,
         format='%(message)s',
-        handlers=[
-            logging.FileHandler(os.path.join('logs', log_file)),
-            logging.StreamHandler()  # Logs to console as well
-        ]
+        handlers=handlers
     )
 
 

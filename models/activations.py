@@ -11,12 +11,14 @@ class Activation:
             activation: str
     ):
         activations = {
-            'relu': nn.ReLU,
-            'tanh': nn.Tanh
+            'relu': nn.ReLU(),
+            'tanh': nn.Tanh(),
+            'softmax': nn.Softmax(dim=1),
+            'none': lambda x: x
         }
         if activation not in activations.keys():
             raise ValueError(f'Argument activation={activation} must be among {activations.keys()}')
-        self.activation = activations[activation]()
+        self.activation = activations[activation]
 
     def __call__(
             self,

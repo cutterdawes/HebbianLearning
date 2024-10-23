@@ -57,7 +57,7 @@ class GenHebb(nn.Module):
             learning_rule: str,
             activation: str = 'relu',
             n_hebbian_layers: int = 1,
-            importance_factor: float = 0,
+            importance_factor: float = 0,  # TODO: better name
             **kwargs  # optional learning rule parameters
     ) -> None:
         """

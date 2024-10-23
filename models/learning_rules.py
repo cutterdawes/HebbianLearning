@@ -145,9 +145,8 @@ class STDP:
             W: torch.Tensor
     ) -> torch.Tensor:
         
-        if isinstance(self.beta, float):
-            # sample beta for each neuron uniformly from [0, beta]
-            self.beta = self.beta * torch.rand(x.shape[-1])
+        # sample beta for each neuron uniformly from [0, beta]
+        self.beta = self.beta * torch.rand(x.shape[-1])
 
         try:
             # update time dependent variables

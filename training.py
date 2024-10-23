@@ -6,20 +6,21 @@ from torch import nn, optim
 from models.baseline import Baseline
 
 
-def unsupervised(model, trainloader, epochs, lr, device):
+def unsupervised(model, trainloader, epochs, lr, device, verbose=True):
     '''Unsupervised training with Hebbian learning rule'''
 
     # log start of training
-    logging.info('\nunsupervised training...\n')
+    if verbose:
+        logging.info('\nunsupervised training...\n')
 
     # Prepare model
     model.to(device)
     model.hebb.train()
 
     # define unsupervised optimizer and LR scheduler
-    # optimizer = optim.Adam(model.hebb.parameters(), lr=lr)
-    optimizer = optim.Adam([
-        {'params': model.hebb[i].parameters(), 'lr': lr / 2**i}  # learning rate for i-th Hebbian layer
+    # optimizer = optim.SGD(model.hebb.parameters(), lr=lr)
+    optimizer = optim.SGD([
+        {'params': model.hebb[i].parameters(), 'lr': lr / 4**i}  # learning rate for i-th Hebbian layer
         for i in range(model.n_hebbian_layers)
     ])
 
@@ -48,19 +49,22 @@ def unsupervised(model, trainloader, epochs, lr, device):
         norms = [int(torch.norm(model.hebb[i].W)) for i in range(model.n_hebbian_layers)]
         norms = ', '.join(map(str, norms))
         msg = f'epoch [{epoch+1}/{epochs}]\t|W|_F: {norms}'
-        logging.info(msg)
+        if verbose:
+            logging.info(msg)
 
     optimizer.zero_grad()
     model.hebb.requires_grad = False
     model.hebb.eval()
-    logging.info('')
+    if verbose:
+        logging.info('')
 
 
-def supervised(model, trainloader, testloader, epochs, lr, device):
+def supervised(model, trainloader, testloader, epochs, lr, device, verbose=True):
     '''supervised training of classifier'''
 
     # log start of training
-    logging.info('\nsupervised training...\n')
+    if verbose:
+        logging.info('\nsupervised training...\n')
 
     # Prepare model
     model.to(device)
@@ -104,13 +108,14 @@ def supervised(model, trainloader, testloader, epochs, lr, device):
                 _, predicted = torch.max(outputs.data, 1)
                 correct += (predicted == labels).sum().item()
 
-        # evaluation on test set
+        # evaluation
         if epoch == 0 or epoch % 10 == 9 or epoch == epochs - 1:
             msg = (
                 f'epoch [{epoch+1}/{epochs}]\n' +
                 f'train loss: {running_loss / len(trainloader):.3f} \t train accuracy: {100 * correct / total:.1f} %'
             )
-            logging.info(msg)
+            if verbose:
+                logging.info(msg)
 
             # on the test set
             model.eval()
@@ -132,6 +137,25 @@ def supervised(model, trainloader, testloader, epochs, lr, device):
                     loss = criterion(outputs, labels)
                     running_loss += loss.item()
             msg = f'test loss: {running_loss / len(testloader):.3f} \t test accuracy: {100 * correct / total:.1f} % \n'
-            logging.info(msg)
+            if verbose:
+                logging.info(msg)
         
         # scheduler.step()
+
+def eval(model, testloader, device):
+    model.eval()
+    correct = 0
+    total = 0
+    # since we're not training, we don't need to calculate the gradients for our outputs
+    with torch.no_grad():
+        for data in testloader:
+            inputs, labels = data
+            inputs = inputs.to(device)
+            labels = labels.to(device)
+            # calculate outputs by running inputs through the network
+            outputs = model(inputs)
+            # the class with the highest energy is what we choose as prediction
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+    return 100 * correct / total
