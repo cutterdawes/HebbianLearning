@@ -97,7 +97,7 @@ if __name__ == '__main__':
         }
 
         # run trials
-        num_trials = 1
+        num_trials = 3
         test_acc = 0
         for _ in range(num_trials):
             test_acc += run_trial(config)
