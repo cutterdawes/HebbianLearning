@@ -6,7 +6,7 @@ model:
   learning_rule: STDP
   activation: tanh
   n_hebbian_layers: 2
-  importance_factor: 0
+  importance_factor: 1
   kwargs:
     beta: 0.1
 training:
