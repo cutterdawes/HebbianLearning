@@ -12,4 +12,4 @@ source ~/.bashrc
 conda activate hebbian
 
 # train model
-python run.py --config STDP-big.yml
+python run.py --config STDP-big
