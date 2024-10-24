@@ -51,7 +51,7 @@ if __name__ == '__main__':
     param_grid = {
         'activation': ['tanh', 'relu'],
         'layers': [1, 2, 3],
-        'importance_factor': [0, 10, 100],
+        'importance_factor': [0, 1, 2],
         'beta': [0.1],
         'epochs': [3],
         'lr': [0.0003, 0.0004, 0.0005],
